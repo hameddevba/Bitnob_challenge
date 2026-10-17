@@ -1,4 +1,4 @@
-import { getTransferForViewer } from "@/lib/transfers";
+import { getTransferForViewer, refreshTransfer } from "@/lib/transfers";
 import { maskPhone } from "@/lib/validators";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -9,8 +9,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const token = new URL(req.url).searchParams.get("token") ?? "";
   if (!UUID.test(id) || !token) return Response.json({ error: "Introuvable" }, { status: 404 });
 
-  const t = await getTransferForViewer(id, token);
+  let t = await getTransferForViewer(id, token);
   if (!t) return Response.json({ error: "Introuvable" }, { status: 404 });
+
+  // Filet de sécurité si le webhook n'arrive pas : on interroge Bitnob (max 1 fois / 4 s).
+  try {
+    await refreshTransfer(id, { throttleMs: 4000 });
+    t = (await getTransferForViewer(id, token)) ?? t;
+  } catch (e) {
+    console.error("refresh", (e as Error).message);
+  }
 
   return Response.json({
     id: t.id,

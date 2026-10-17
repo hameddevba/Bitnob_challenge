@@ -1,22 +1,18 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { BitnobError, createPayoutQuote } from "@/lib/bitnob";
+import { MAX_FCFA, MIN_FCFA } from "@/lib/environment";
 import { priceFromQuote } from "@/lib/pricing";
+import { amountSchema } from "@/lib/validators";
 
 // Devis indicatif FCFA → sats (aucune écriture en base). Le devis définitif est
 // recréé à la validation du transfert, la cotation Bitnob expirant en ~6 min.
-const schema = z.object({
-  amountFcfa: z.number().int()
-    .min(Number(process.env.MIN_FCFA ?? 500))
-    .max(Number(process.env.MAX_FCFA ?? 500000)),
-});
+const schema = z.object({ amountFcfa: amountSchema });
 
 export async function POST(req: Request) {
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return Response.json(
-      { error: `Montant invalide (entre ${process.env.MIN_FCFA ?? 500} et ${process.env.MAX_FCFA ?? 500000} FCFA)` },
-      { status: 400 });
+    return Response.json({ error: `Montant invalide (entre ${MIN_FCFA} et ${MAX_FCFA} FCFA)` }, { status: 400 });
   }
   try {
     const q = await createPayoutQuote({ settlementAmountFcfa: parsed.data.amountFcfa, reference: `q-${randomUUID()}` });

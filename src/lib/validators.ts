@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SN_NETWORKS, SN_PHONE_PATTERN } from "./bitnob";
+import { MAX_FCFA, MIN_FCFA } from "./environment";
 
 // Numéro sénégalais → 9 chiffres (771234567), format attendu par Bitnob.
 export function normalizeSnPhone(input: string): string {
@@ -12,9 +13,8 @@ export function maskPhone(phone: string): string {
   return phone.length >= 9 ? `${phone.slice(0, 2)} ••• •• ${phone.slice(-2)}` : "•••";
 }
 
-const amount = z.number().int()
-  .min(Number(process.env.MIN_FCFA ?? 500))
-  .max(Number(process.env.MAX_FCFA ?? 500000));
+export const amountSchema = z.number().int().min(MIN_FCFA).max(MAX_FCFA);
+const amount = amountSchema;
 
 export const createTransferSchema = z.object({
   amountFcfa: amount,
