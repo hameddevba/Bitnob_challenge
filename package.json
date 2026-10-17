@@ -1,0 +1,32 @@
+{
+  "name": "fcfa-btc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest run",
+    "check:db": "tsx scripts/check-db.ts",
+    "check:bitnob": "tsx scripts/check-bitnob.ts"
+  },
+  "dependencies": {
+    "next": "16.4.2",
+    "pg": "8.23.1",
+    "qrcode": "1.5.4",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "@types/pg": "*",
+    "@types/qrcode": "*",
+    "@types/react": "19.3.0",
+    "dotenv": "18.0.8",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "5.0.5"
+  }
+}
