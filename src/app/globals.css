@@ -1,19 +1,23 @@
+/* Thème sombre : nuit de Dakar, lueur de coucher de soleil (orange bitcoin → rose) */
 :root {
-  --paper: #ffffff;
-  --ink: #14213d;        /* encre de billet */
-  --muted: #667085;
-  --line: #e4e7ec;
-  --field: #f2f4f7;
-  --accent: #0f7b5f;     /* vert baobab : l'argent qui arrive */
-  --accent-press: #0b6650;
-  --sats: #c46a00;       /* réservé aux montants en bitcoin */
-  --err: #c0362c;
-  --err-bg: #fdf0ef;
-  --warn: #8a5300;
-  --warn-bg: #fff6e6;
-  --ok-bg: #e8f5f0;
+  color-scheme: dark;
+  --paper: #0b0b0d;
+  --surface: #141417;
+  --ink: #f5f5f4;
+  --muted: #a1a1aa;
+  --line: rgba(255, 255, 255, 0.08);
+  --field: #18181b;
+  --accent: #34d399;     /* vert : l'argent qui arrive */
+  --accent-press: #10b981;
+  --sats: #ffa94d;       /* réservé aux montants en bitcoin */
+  --err: #ff7a7a;
+  --err-bg: rgba(255, 122, 122, 0.12);
+  --warn: #fbbf24;
+  --warn-bg: rgba(251, 191, 36, 0.12);
+  --ok-bg: rgba(52, 211, 153, 0.12);
+  --grad: linear-gradient(90deg, #ffc78c 0%, #ff7a59 45%, #ff57c4 100%);
 
-  --display: var(--font-display), "Segoe UI", system-ui, sans-serif;
+  --display: var(--font-text), "Segoe UI", system-ui, sans-serif;
   --text: var(--font-text), "Segoe UI", system-ui, sans-serif;
 }
 
@@ -64,6 +68,10 @@ h1 { font-family: var(--display); font-weight: 700; font-size: 28px; line-height
 .line.total .k { color: var(--ink); font-weight: 600; }
 .line.total .v { font-family: var(--display); font-size: 22px; letter-spacing: -0.02em; }
 .sats { color: var(--sats); }
+.saving { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 2px 12px; margin-top: 14px; padding: 13px 15px; border-radius: 14px; background: var(--ok-bg); color: var(--accent); }
+.saving span { font-weight: 600; }
+.saving strong { font-family: var(--display); font-size: 20px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.saving small { grid-column: 1 / -1; font-size: 12px; opacity: 0.85; }
 .note { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
 
 /* ---------- champs ---------- */
@@ -207,6 +215,8 @@ h1 { font-family: var(--display); font-weight: 700; font-size: 28px; line-height
 .pots li { padding: 14px 0; border-bottom: 1px solid var(--line); }
 .pot-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 10px; }
 .pot-title { font-weight: 700; color: var(--ink); text-decoration: none; }
+.pot-share { display: flex; gap: 6px; flex: none; }
+.pot-share .btn + .btn { margin-top: 0; }
 .pot-head .inline-copy { font-size: 13px; color: var(--muted); white-space: nowrap; }
 .new-pot { margin-top: 6px; padding: 4px 0 6px; }
 .history { list-style: none; margin: 8px 0 24px; padding: 0; }
@@ -286,3 +296,80 @@ h1 { font-family: var(--display); font-weight: 700; font-size: 28px; line-height
 @keyframes blink { 50% { opacity: 0.25; } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
 @media (min-width: 600px) { .app { padding-top: 24px; } .actions { position: static; background: none; } }
+
+/* ==========================================================================
+   Habillage sombre (inspiré des interfaces « premium ») : surcharges groupées
+   ========================================================================== */
+body {
+  background:
+    radial-gradient(ellipse 90% 45% at 50% -8%, rgba(255, 112, 80, 0.20), transparent 70%),
+    radial-gradient(ellipse 60% 35% at 100% 0%, rgba(255, 87, 196, 0.10), transparent 70%),
+    var(--paper);
+  background-attachment: fixed;
+}
+.grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* titres plus fins et serrés */
+h1 { font-weight: 500; font-size: 32px; letter-spacing: -0.045em; }
+.group-title { font-weight: 600; }
+.wordmark { font-weight: 700; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.env { border: 1px solid rgba(251, 191, 36, 0.25); }
+.env.live { border-color: rgba(52, 211, 153, 0.3); }
+.top { background: rgba(11, 11, 13, 0.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+
+/* montants : grands, fins */
+.amount { border-bottom: 1px solid rgba(255, 255, 255, 0.18); }
+.amount:focus-within { border-bottom-color: #ff7a59; }
+.amount input { font-weight: 600; letter-spacing: -0.06em; }
+.pay-amount, .pot-progress .raised { font-weight: 600; letter-spacing: -0.05em; }
+.done-screen .sent { font-weight: 600; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* cartes vitrées */
+.receipt, .tile, .ln-box {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+  border: 1px solid var(--line); border-radius: 18px;
+}
+.receipt { padding: 2px 16px; }
+.tile:active { background: var(--field); }
+.saving { border: 1px solid rgba(52, 211, 153, 0.22); }
+
+/* boutons pilule : blanc lumineux pour l'action principale */
+.btn {
+  border-radius: 999px; background: #fafafa; color: #0b0b0d; font-weight: 600;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 10px 34px -10px rgba(255, 122, 89, 0.55);
+  transition: transform 120ms ease, background 120ms ease;
+}
+.btn:hover { background: #e7e7e7; }
+.btn:active { transform: scale(0.985); }
+.btn:disabled { background: rgba(255, 255, 255, 0.07); color: #71717a; box-shadow: none; }
+.btn.secondary { background: rgba(255, 255, 255, 0.06); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.btn.secondary:hover { background: rgba(255, 255, 255, 0.1); }
+.sim { background: transparent; box-shadow: none; border: 1px dashed rgba(251, 191, 36, 0.6); color: var(--warn); }
+.sim:hover { background: var(--warn-bg); }
+
+/* champs */
+.field input, .field select, .prefix { border: 1px solid var(--line); }
+.field input:focus, .field select:focus, .prefix:focus-within { background: var(--field); border-color: rgba(255, 255, 255, 0.35); }
+.field .prefix input { border: 0; }
+.field input::placeholder { color: #52525b; }
+.networks button, .chips button { border: 1px solid var(--line); }
+.networks button[aria-pressed="true"], .chips button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.55); }
+
+/* barre d'onglets vitrée */
+.actions { background: linear-gradient(to bottom, rgba(11, 11, 13, 0), var(--paper) 30%); }
+.tabbar { background: rgba(14, 14, 16, 0.78); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid var(--line); }
+.tabbar a.on { color: var(--ink); }
+.tabbar a.on svg { filter: drop-shadow(0 0 8px rgba(255, 122, 89, 0.8)); color: #ff8a65; }
+@media (min-width: 600px) { .tabbar { border: 1px solid var(--line); border-bottom: 0; } }
+
+/* progression et QR (le QR garde un fond blanc pour rester lisible par les portefeuilles) */
+.bar { background: rgba(255, 255, 255, 0.07); }
+.bar span { background: var(--grad); }
+.qr img { background: #fff; padding: 14px; border-radius: 20px; box-shadow: 0 20px 60px -20px rgba(255, 122, 89, 0.45); }
+.track .mark { background: var(--paper); }
+.done-screen .seal { box-shadow: 0 0 30px rgba(52, 211, 153, 0.5); }
+.mono, .proof .hash code, .journal pre { font-family: var(--font-mono), ui-monospace, Consolas, monospace; }
+
+/* apparition douce des écrans */
+.screen { animation: rise 320ms ease-out both; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }

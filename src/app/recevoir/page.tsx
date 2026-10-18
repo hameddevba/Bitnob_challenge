@@ -25,7 +25,7 @@ export default function ReceivePage() {
 
   return (
     <div className="screen">
-      <h1>Recevez de l&apos;argent de vos proches</h1>
+      <h1>Recevez de l&apos;argent de <span className="grad">vos proches</span></h1>
       <p className="lede">Ils paient en bitcoin depuis n&apos;importe quel pays. Vous recevez des FCFA sur Orange Money, Wave, Free ou Expresso.</p>
 
       {space && (

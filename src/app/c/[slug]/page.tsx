@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { COUNTRIES, fcfa, MAX_FCFA, MIN_FCFA, NETWORKS, num, postJson, sats } from "../../ui";
+import { COUNTRIES, fcfa, MAX_FCFA, MIN_FCFA, NETWORKS, num, postJson, sats, whatsappUrl } from "../../ui";
 import { useQuote } from "../../useQuote";
 import { rememberTransfer } from "../../store";
 
@@ -97,6 +97,9 @@ export default function PotPage({ params }: { params: Promise<{ slug: string }> 
           {pot.progress.contributions === 0 ? "Soyez le premier à contribuer." : `${pot.progress.contributions} contribution${pot.progress.contributions > 1 ? "s" : ""}`}
           {pot.progress.simulated > 0 && ` (dont ${pot.progress.simulated} simulée${pot.progress.simulated > 1 ? "s" : ""} en sandbox)`}
         </p>
+        <a className="btn secondary small" style={{ marginTop: 4 }}
+          href={whatsappUrl(`Participe à la cagnotte « ${pot.title} » pour ${pot.recipient.name} : ${typeof window !== "undefined" ? window.location.href : ""}`)}
+          target="_blank" rel="noreferrer">Partager sur WhatsApp</a>
       </div>
 
       {pot.closed ? (

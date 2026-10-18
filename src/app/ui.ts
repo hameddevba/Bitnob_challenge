@@ -41,5 +41,13 @@ export async function postJson<T>(url: string, body: unknown): Promise<T> {
   return data as T;
 }
 
+// Au Sénégal, un lien se partage d'abord sur WhatsApp
+export const whatsappUrl = (text: string) => `https://wa.me/?text=${encodeURIComponent(text)}`;
+
+// Coût moyen d'un transfert vers l'Afrique subsaharienne : ~8 % (Banque mondiale,
+// Remittance Prices Worldwide). Sert uniquement à montrer l'économie, jamais au calcul du prix.
+export const CLASSIC_FEE_PERCENT = 8;
+export const classicFee = (amountFcfa: number) => Math.round((amountFcfa * CLASSIC_FEE_PERCENT) / 100);
+
 export const MIN_FCFA = Number(process.env.NEXT_PUBLIC_MIN_FCFA ?? 500);
 export const MAX_FCFA = Number(process.env.NEXT_PUBLIC_MAX_FCFA ?? 500000);

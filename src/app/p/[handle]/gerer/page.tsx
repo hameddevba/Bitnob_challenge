@@ -2,7 +2,7 @@
 
 import { Suspense, use, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { fcfa, NETWORKS, num } from "../../../ui";
+import { fcfa, NETWORKS, num, whatsappUrl } from "../../../ui";
 import { rememberSpace } from "../../../store";
 
 type Dashboard = {
@@ -101,9 +101,10 @@ function Manage({ handle }: { handle: string }) {
       </div>
 
       <div className="row-btns" style={{ marginTop: 18 }}>
+        <a className="btn" href={whatsappUrl(`Envoie-moi de l'argent sur ${network.label} avec Yónne, payé en bitcoin : ${data.recipient.link}`)} target="_blank" rel="noreferrer">WhatsApp</a>
         <button className="btn secondary" onClick={() => copy(data.recipient.link, "link")}>{copied === "link" ? "Lien copié" : "Copier mon lien"}</button>
-        <a className="btn secondary" href={data.recipient.link}>Ma page</a>
       </div>
+      <a className="btn secondary" style={{ marginTop: 10 }} href={data.recipient.link}>Voir ma page</a>
 
       <h2 className="group-title">Mes cagnottes</h2>
       {data.pots.length === 0 && <p className="note">Une cagnotte réunit plusieurs proches autour d&apos;un objectif : scolarité, Tabaski, santé…</p>}
@@ -114,7 +115,10 @@ function Manage({ handle }: { handle: string }) {
             <li key={p.slug}>
               <div className="pot-head">
                 <a href={p.link} className="pot-title">{p.title}</a>
-                <button className="btn secondary small" onClick={() => copy(p.link, p.slug)}>{copied === p.slug ? "Copié" : "Copier"}</button>
+                <span className="pot-share">
+                  <a className="btn secondary small" href={whatsappUrl(`Participe à la cagnotte « ${p.title} » : ${p.link}`)} target="_blank" rel="noreferrer">WhatsApp</a>
+                  <button className="btn secondary small" onClick={() => copy(p.link, p.slug)}>{copied === p.slug ? "Copié" : "Copier"}</button>
+                </span>
               </div>
               <div className="bar"><span style={{ width: `${pct}%` }} /></div>
               <p className="note">{fcfa(p.progress.raisedFcfa)} sur {fcfa(p.goalFcfa)}, {p.progress.contributions} contribution{p.progress.contributions > 1 ? "s" : ""}</p>

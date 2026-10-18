@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { fcfa, MAX_FCFA, MIN_FCFA, num, sats } from "./ui";
+import { CLASSIC_FEE_PERCENT, classicFee, fcfa, MAX_FCFA, MIN_FCFA, num, sats } from "./ui";
 import { useQuote } from "./useQuote";
 
 // Onglet « Envoyer » : montant en FCFA → bénéficiaire → paiement
@@ -15,7 +15,7 @@ export default function SendPage() {
 
   return (
     <div className="screen">
-      <h1>Combien envoyer{" "}?</h1>
+      <h1>Combien <span className="grad">envoyer</span>{" "}?</h1>
       <p className="lede">Le bénéficiaire reçoit exactement ce montant sur son mobile money.</p>
 
       <div className="amount">
@@ -35,6 +35,13 @@ export default function SendPage() {
         <div className="line"><span className="k">Frais</span><span className="v">{quote ? fcfa(quote.feeFcfa) : pending}</span></div>
         <div className="line total"><span className="k">À payer en bitcoin</span><span className="v sats">{quote ? sats(quote.totalSats) : pending}</span></div>
       </div>
+      {quote && classicFee(amount) > quote.feeFcfa && (
+        <div className="saving">
+          <span>Vous économisez</span>
+          <strong>{fcfa(classicFee(amount) - quote.feeFcfa)}</strong>
+          <small>par rapport à un transfert classique (~{CLASSIC_FEE_PERCENT} % de frais en moyenne vers l'Afrique, Banque mondiale)</small>
+        </div>
+      )}
       {quote && <p className="note">1 BTC ≈ {fcfa(quote.rateBtcXof)}. Le taux est confirmé juste avant le paiement.</p>}
       {error && <div className="alert err">{error}</div>}
 
