@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CLASSIC_FEE_PERCENT, classicFee, fcfa, MAX_FCFA, MIN_FCFA, num, sats } from "./ui";
 import { useQuote } from "./useQuote";
+import Flow from "./Flow";
 
 // Onglet « Envoyer » : montant en FCFA → bénéficiaire → paiement
 export default function SendPage() {
@@ -17,6 +18,7 @@ export default function SendPage() {
     <div className="screen">
       <h1>Combien <span className="grad">envoyer</span>{" "}?</h1>
       <p className="lede">Le bénéficiaire reçoit exactement ce montant sur son mobile money.</p>
+      <Flow />
 
       <div className="amount">
         <input

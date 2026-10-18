@@ -18,7 +18,14 @@ const STATUS: Record<string, { label: string; tone: "ok" | "wait" | "err" }> = {
   UNDERPAID: { label: "En vérification", tone: "err" },
 };
 
-const day = (iso: string) => new Date(iso).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+// Affichés seulement quand ce téléphone n'a encore rien envoyé, toujours marqués « Exemple »
+const EXAMPLES = [
+  { who: "Awa Diop", network: "Wave", from: "Paris", amountFcfa: 25000 },
+  { who: "Maman (Fatou Ndiaye)", network: "Orange Money", from: "Milan", amountFcfa: 50000 },
+  { who: "Cagnotte scolarité", network: "Wave", from: "Montréal", amountFcfa: 10000 },
+];
+
+const day =(iso: string) => new Date(iso).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
 // Onglet « Activité » : les envois faits depuis ce téléphone + l'espace bénéficiaire
 export default function ActivityPage() {
@@ -57,8 +64,22 @@ export default function ActivityPage() {
       <h2 className="group-title">Mes envois</h2>
       {items.length === 0 ? (
         <div className="empty">
-          <p className="lede">Vos envois faits depuis ce téléphone apparaîtront ici.</p>
-          <a className="btn" href="/">Faire un envoi</a>
+          <p className="note" style={{ marginTop: 0 }}>Aucun envoi depuis ce téléphone pour l&apos;instant. Voici à quoi ressemblera votre historique :</p>
+          <ul className="history demo" aria-label="Exemples d'envois">
+            {EXAMPLES.map((e) => (
+              <li key={e.who}>
+                <div>
+                  <div className="who">{e.who}</div>
+                  <div className="when">{e.network}, depuis {e.from}</div>
+                </div>
+                <div className="right">
+                  <div className="amt">{fcfa(e.amountFcfa)}</div>
+                  <span className="tag demo">Exemple</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <a className="btn" href="/">Faire mon premier envoi</a>
         </div>
       ) : (
         <ul className="history tappable">
