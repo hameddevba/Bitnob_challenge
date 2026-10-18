@@ -16,7 +16,7 @@ export const metadata = {
   icons: { icon: "/icons/192", apple: "/icons/180" },
 };
 
-export const viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#0b0b0d", colorScheme: "dark" };
+export const viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#18191d", colorScheme: "dark" };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const env = await getBitnobEnvironment();

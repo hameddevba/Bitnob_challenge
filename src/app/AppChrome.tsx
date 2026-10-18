@@ -28,6 +28,8 @@ export default function AppChrome({ env, live, children }: { env: string; live: 
   }
 
   return (
+    <>
+    <BitcoinBackdrop />
     <div className={`app${withNav ? " with-nav" : ""}`}>
       <header className="top">
         {topLevel ? (
@@ -52,6 +54,29 @@ export default function AppChrome({ env, live, children }: { env: string; live: 
           })}
         </nav>
       )}
+    </div>
+    </>
+  );
+}
+
+// Décor : ₿ au trait fin, anneaux en rotation lente et étincelle (Lightning) en orbite. Purement décoratif.
+function BitcoinBackdrop() {
+  return (
+    <div className="btc-bg" aria-hidden>
+      <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+        <circle className="ring" cx="50" cy="50" r="46" strokeWidth="0.35" strokeDasharray="1 2.6" />
+        <circle className="ring slow" cx="50" cy="50" r="40" strokeWidth="0.3" strokeDasharray="14 6 2 6" />
+        <circle cx="50" cy="50" r="33" strokeWidth="0.45" />
+        <g className="glyph" strokeWidth="1.6">
+          <path d="M41 33v34" />
+          <path d="M41 33h10.5a7.5 7.5 0 0 1 0 15H41" />
+          <path d="M41 48h12.5a9.5 9.5 0 0 1 0 19H41" />
+          <path d="M45 28v5M52 28v5M45 67v5M52 67v5" />
+        </g>
+        <g className="spark">
+          <circle cx="50" cy="4" r="1.1" fill="currentColor" stroke="none" />
+        </g>
+      </svg>
     </div>
   );
 }

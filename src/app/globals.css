@@ -1,21 +1,22 @@
-/* Thème sombre : nuit de Dakar, lueur de coucher de soleil (orange bitcoin → rose) */
+/* Thème anthracite : sombre sans être noir, presque monochrome, une seule touche dorée (bitcoin) */
 :root {
   color-scheme: dark;
-  --paper: #0b0b0d;
-  --surface: #141417;
-  --ink: #f5f5f4;
-  --muted: #a1a1aa;
-  --line: rgba(255, 255, 255, 0.08);
-  --field: #18181b;
-  --accent: #34d399;     /* vert : l'argent qui arrive */
-  --accent-press: #10b981;
-  --sats: #ffa94d;       /* réservé aux montants en bitcoin */
-  --err: #ff7a7a;
-  --err-bg: rgba(255, 122, 122, 0.12);
-  --warn: #fbbf24;
-  --warn-bg: rgba(251, 191, 36, 0.12);
-  --ok-bg: rgba(52, 211, 153, 0.12);
-  --grad: linear-gradient(90deg, #ffc78c 0%, #ff7a59 45%, #ff57c4 100%);
+  --paper: #18191d;
+  --surface: #1f2025;
+  --ink: #ececee;
+  --muted: #9b9ca4;
+  --line: rgba(255, 255, 255, 0.075);
+  --field: #222329;
+  --gold: #d4a86a;       /* seule couleur de marque, utilisée avec parcimonie */
+  --accent: #8fc9ae;     /* vert sauge : l'argent qui arrive */
+  --accent-press: #7bb89c;
+  --sats: #d4a86a;       /* réservé aux montants en bitcoin */
+  --err: #e39191;
+  --err-bg: rgba(227, 145, 145, 0.1);
+  --warn: #d9b46e;
+  --warn-bg: rgba(217, 180, 110, 0.1);
+  --ok-bg: rgba(143, 201, 174, 0.09);
+  --grad: linear-gradient(90deg, #f4f4f5 0%, #e3c89f 100%);
 
   --display: var(--font-text), "Segoe UI", system-ui, sans-serif;
   --text: var(--font-text), "Segoe UI", system-ui, sans-serif;
@@ -297,79 +298,102 @@ h1 { font-family: var(--display); font-weight: 700; font-size: 28px; line-height
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
 @media (min-width: 600px) { .app { padding-top: 24px; } .actions { position: static; background: none; } }
 
+
 /* ==========================================================================
-   Habillage sombre (inspiré des interfaces « premium ») : surcharges groupées
+   Habillage anthracite : finesse (traits de 1 px, graisses légères), peu de couleur
    ========================================================================== */
 body {
   background:
-    radial-gradient(ellipse 90% 45% at 50% -8%, rgba(255, 112, 80, 0.20), transparent 70%),
-    radial-gradient(ellipse 60% 35% at 100% 0%, rgba(255, 87, 196, 0.10), transparent 70%),
+    radial-gradient(ellipse 80% 40% at 50% -10%, rgba(255, 255, 255, 0.05), transparent 70%),
     var(--paper);
   background-attachment: fixed;
 }
+.app { position: relative; z-index: 1; }
 .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
-/* titres plus fins et serrés */
-h1 { font-weight: 500; font-size: 32px; letter-spacing: -0.045em; }
-.group-title { font-weight: 600; }
-.wordmark { font-weight: 700; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.env { border: 1px solid rgba(251, 191, 36, 0.25); }
-.env.live { border-color: rgba(52, 211, 153, 0.3); }
-.top { background: rgba(11, 11, 13, 0.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+/* typographie */
+h1 { font-weight: 500; font-size: 30px; letter-spacing: -0.04em; }
+.lede { font-size: 15px; }
+.group-title { font-weight: 500; font-size: 16px; color: var(--ink); }
+.wordmark { font-weight: 600; font-size: 20px; letter-spacing: -0.04em; color: var(--ink); }
+.wordmark::after { content: ""; display: inline-block; width: 5px; height: 5px; margin-left: 3px; border-radius: 50%; background: var(--gold); vertical-align: 2px; }
+.env { font-weight: 500; background: transparent; border: 1px solid rgba(217, 180, 110, 0.35); }
+.env.live { background: transparent; border-color: rgba(143, 201, 174, 0.4); }
+.top { background: rgba(24, 25, 29, 0.7); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 
-/* montants : grands, fins */
-.amount { border-bottom: 1px solid rgba(255, 255, 255, 0.18); }
-.amount:focus-within { border-bottom-color: #ff7a59; }
-.amount input { font-weight: 600; letter-spacing: -0.06em; }
-.pay-amount, .pot-progress .raised { font-weight: 600; letter-spacing: -0.05em; }
-.done-screen .sent { font-weight: 600; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+/* montants : grands et fins */
+.amount { border-bottom: 1px solid var(--line); }
+.amount:focus-within { border-bottom-color: rgba(212, 168, 106, 0.6); }
+.amount input { font-weight: 300; letter-spacing: -0.055em; }
+.amount .unit { font-weight: 400; font-size: 17px; }
+.pay-amount, .pot-progress .raised { font-weight: 400; letter-spacing: -0.045em; }
+.done-screen .sent { font-weight: 300; }
+.line .v { font-weight: 500; }
+.line.total .k { font-weight: 500; }
+.line.total .v { font-weight: 500; font-size: 20px; }
 
-/* cartes vitrées */
-.receipt, .tile, .ln-box {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
-  border: 1px solid var(--line); border-radius: 18px;
-}
+/* cartes : surface à peine plus claire, filet de 1 px */
+.receipt, .tile, .ln-box { background: rgba(255, 255, 255, 0.025); border: 1px solid var(--line); border-radius: 16px; }
 .receipt { padding: 2px 16px; }
 .tile:active { background: var(--field); }
-.saving { border: 1px solid rgba(52, 211, 153, 0.22); }
+.saving { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.saving span { font-weight: 400; color: var(--muted); }
+.saving strong { font-weight: 500; color: var(--accent); }
 
-/* boutons pilule : blanc lumineux pour l'action principale */
+/* boutons : fins, sans ombre lourde */
 .btn {
-  border-radius: 999px; background: #fafafa; color: #0b0b0d; font-weight: 600;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 10px 34px -10px rgba(255, 122, 89, 0.55);
-  transition: transform 120ms ease, background 120ms ease;
+  border-radius: 999px; background: var(--ink); color: #18191d; font-weight: 500; font-size: 15px; padding: 15px;
+  letter-spacing: -0.01em; box-shadow: none; transition: background 160ms ease, transform 120ms ease, border-color 160ms ease;
 }
-.btn:hover { background: #e7e7e7; }
-.btn:active { transform: scale(0.985); }
-.btn:disabled { background: rgba(255, 255, 255, 0.07); color: #71717a; box-shadow: none; }
-.btn.secondary { background: rgba(255, 255, 255, 0.06); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
-.btn.secondary:hover { background: rgba(255, 255, 255, 0.1); }
-.sim { background: transparent; box-shadow: none; border: 1px dashed rgba(251, 191, 36, 0.6); color: var(--warn); }
+.btn:hover { background: #ffffff; }
+.btn:active { transform: scale(0.99); }
+.btn:disabled { background: transparent; color: #6b6c74; box-shadow: inset 0 0 0 1px var(--line); }
+.btn.secondary { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14); }
+.btn.secondary:hover { background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28); }
+.btn.small { padding: 7px 14px; font-size: 13px; }
+.sim { background: transparent; box-shadow: none; border: 1px dashed rgba(217, 180, 110, 0.5); color: var(--warn); }
 .sim:hover { background: var(--warn-bg); }
 
 /* champs */
-.field input, .field select, .prefix { border: 1px solid var(--line); }
-.field input:focus, .field select:focus, .prefix:focus-within { background: var(--field); border-color: rgba(255, 255, 255, 0.35); }
-.field .prefix input { border: 0; }
-.field input::placeholder { color: #52525b; }
-.networks button, .chips button { border: 1px solid var(--line); }
-.networks button[aria-pressed="true"], .chips button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.55); }
+.field label { font-weight: 500; font-size: 13px; color: var(--muted); }
+.field input, .field select, .prefix { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line); }
+.field input:focus, .field select:focus, .prefix:focus-within { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.3); }
+.field .prefix input { border: 0; background: transparent; }
+.field input::placeholder { color: #5d5e66; }
+.networks button, .chips button { background: transparent; border: 1px solid var(--line); font-weight: 500; }
+.networks button[aria-pressed="true"], .chips button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.4); }
+.progress span { height: 2px; }
 
-/* barre d'onglets vitrée */
-.actions { background: linear-gradient(to bottom, rgba(11, 11, 13, 0), var(--paper) 30%); }
-.tabbar { background: rgba(14, 14, 16, 0.78); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid var(--line); }
+/* barre d'onglets */
+.actions { background: linear-gradient(to bottom, rgba(24, 25, 29, 0), var(--paper) 30%); }
+.tabbar { background: rgba(24, 25, 29, 0.82); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid var(--line); }
+.tabbar a { font-weight: 500; font-size: 11px; position: relative; }
 .tabbar a.on { color: var(--ink); }
-.tabbar a.on svg { filter: drop-shadow(0 0 8px rgba(255, 122, 89, 0.8)); color: #ff8a65; }
+.tabbar a.on::before { content: ""; position: absolute; top: 0; width: 22px; height: 1px; background: var(--gold); }
+.tabbar svg path { stroke-width: 1.6; }
 @media (min-width: 600px) { .tabbar { border: 1px solid var(--line); border-bottom: 0; } }
 
-/* progression et QR (le QR garde un fond blanc pour rester lisible par les portefeuilles) */
-.bar { background: rgba(255, 255, 255, 0.07); }
-.bar span { background: var(--grad); }
-.qr img { background: #fff; padding: 14px; border-radius: 20px; box-shadow: 0 20px 60px -20px rgba(255, 122, 89, 0.45); }
-.track .mark { background: var(--paper); }
-.done-screen .seal { box-shadow: 0 0 30px rgba(52, 211, 153, 0.5); }
+/* progression, QR (fond blanc indispensable aux portefeuilles), suivi */
+.bar { height: 6px; background: rgba(255, 255, 255, 0.06); }
+.bar span { background: linear-gradient(90deg, #b88c55, var(--gold)); }
+.qr img { background: #fff; padding: 14px; border-radius: 18px; }
+.track .mark { background: var(--paper); border-width: 1px; }
+.track li::before { width: 1px; left: 8.5px; }
+.journal { border-left-width: 1px; }
 .mono, .proof .hash code, .journal pre { font-family: var(--font-mono), ui-monospace, Consolas, monospace; }
 
 /* apparition douce des écrans */
-.screen { animation: rise 320ms ease-out both; }
-@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.screen { animation: rise 420ms cubic-bezier(.2, .7, .2, 1) both; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ---------- bitcoin animé en arrière-plan ---------- */
+.btc-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.btc-bg svg { position: absolute; width: min(120vw, 620px); aspect-ratio: 1; top: 50%; left: 50%; translate: -50% -55%; color: var(--gold); opacity: 0.07; animation: float 14s ease-in-out infinite; }
+.btc-bg .ring { transform-origin: 50px 50px; animation: spin 60s linear infinite; }
+.btc-bg .ring.slow { animation-duration: 120s; animation-direction: reverse; }
+.btc-bg .glyph { transform-origin: 50px 50px; animation: breathe 7s ease-in-out infinite; }
+.btc-bg .spark { transform-origin: 50px 50px; animation: spin 18s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes float { 50% { translate: -50% -52%; } }
+@keyframes breathe { 50% { opacity: 0.55; transform: scale(0.97); } }
+@media (prefers-reduced-motion: reduce) { .btc-bg svg, .btc-bg * { animation: none !important; } }

@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Payez en bitcoin, votre famille reçoit des FCFA sur Orange Money ou Wave.",
     start_url: "/",
     display: "standalone",
-    background_color: "#0b0b0d",
-    theme_color: "#0b0b0d",
+    background_color: "#18191d",
+    theme_color: "#18191d",
     lang: "fr",
     icons: [
       { src: "/icons/192", sizes: "192x192", type: "image/png" },
