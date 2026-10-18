@@ -216,7 +216,10 @@ export async function runPayout(transferId: string): Promise<void> {
         await applyPayoutStatus(transferId, existing.status, "payout_resynced", existing);
         return;
       }
-      if (PAYOUT_DEAD.has(s) || quoteExpiring) {
+      // Finalisation déjà demandée et issue inconnue : on ne crée JAMAIS un second payout
+      // tant que Bitnob n'a pas déclaré celui-ci mort (FAILED / EXPIRED). On réessaie la même finalisation.
+      const finalizeRequested = !PAYOUT_DEAD.has(s) && (await wasFinalizeRequested(transferId, payoutId));
+      if (PAYOUT_DEAD.has(s) || (quoteExpiring && !finalizeRequested)) {
         payoutId = null;
         reference = `po-${randomUUID()}`;
         await pool.query(
@@ -257,6 +260,9 @@ export async function runPayout(transferId: string): Promise<void> {
       await logEvent(pool, transferId, "bitnob", "payout_initialized", init);
     }
 
+    // Trace AVANT l'appel : si la réponse se perd, on sait que l'argent a peut-être déjà bougé.
+    const { rows: current } = await pool.query(`SELECT bitnob_payout_id FROM transfers WHERE id=$1`, [transferId]);
+    await logEvent(pool, transferId, "system", "payout_finalize_requested", { payout_id: current[0]?.bitnob_payout_id, quote_id: quoteId });
     const fin = await finalizePayout(quoteId);
     await applyPayoutStatus(transferId, fin.status, "payout_finalized", fin);
   } catch (e) {
@@ -264,6 +270,23 @@ export async function runPayout(transferId: string): Promise<void> {
     await pool.query(`UPDATE transfers SET status='PAYOUT_FAILED', payout_status='ERROR' WHERE id=$1`, [transferId]);
     await logEvent(pool, transferId, "bitnob", "payout_error", { error: err.message, body: err.body ?? null });
   }
+}
+
+export async function wasFinalizeRequested(transferId: string, payoutId: string): Promise<boolean> {
+  const { rows } = await pool.query(
+    `SELECT 1 FROM transfer_events WHERE transfer_id=$1 AND event_type='payout_finalize_requested'
+       AND payload->>'payout_id' = $2 LIMIT 1`, [transferId, payoutId]);
+  return rows.length > 0;
+}
+
+// Un remboursement n'est sûr que si aucun payout ne peut encore aboutir.
+export async function payoutCanStillComplete(transferId: string, payoutId: string | null): Promise<boolean> {
+  if (!payoutId) return false;
+  const p = await getPayout(payoutId);
+  const s = p.status.toUpperCase();
+  if (PAYOUT_DEAD.has(s)) return false;
+  if (s === "INITIATED" || s === "QUOTE") return wasFinalizeRequested(transferId, payoutId);
+  return true; // PENDING, PROCESSING, COMPLETED : l'argent part ou est parti
 }
 
 async function applyPayoutStatus(transferId: string, bitnobStatus: string, eventType: string, payload: unknown) {

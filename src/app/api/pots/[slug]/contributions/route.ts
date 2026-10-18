@@ -1,3 +1,4 @@
+import { rateLimit } from "@/lib/rateLimit";
 import { BitnobError } from "@/lib/bitnob";
 import { getPot } from "@/lib/pots";
 import { createLinkTransfer } from "@/lib/transfers";
@@ -5,6 +6,8 @@ import { contributionSchema } from "@/lib/validators";
 
 // POST : contribuer à une cagnotte. Le bénéficiaire vient de la base, jamais du client.
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
+  const limited = rateLimit(req, "contribution", 10);
+  if (limited) return limited;
   const { slug } = await params;
   const pot = await getPot(slug);
   if (!pot) return Response.json({ error: "Cette cagnotte n'existe pas" }, { status: 404 });

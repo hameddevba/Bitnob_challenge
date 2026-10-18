@@ -1,8 +1,11 @@
+import { rateLimit } from "@/lib/rateLimit";
 import { isSimulationEnabled } from "@/lib/environment";
 import { getTransferForViewer, simulateSandboxPayment } from "@/lib/transfers";
 
 // POST /api/transfers/:id/simulate?token=… — sandbox uniquement (voir isSimulationEnabled)
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const limited = rateLimit(req, "simulate", 10);
+  if (limited) return limited;
   if (!(await isSimulationEnabled())) return Response.json({ error: "Introuvable" }, { status: 404 });
 
   const { id } = await params;

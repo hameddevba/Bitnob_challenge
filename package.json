@@ -9,7 +9,8 @@
     "start": "next start",
     "test": "vitest run",
     "check:db": "tsx scripts/check-db.ts",
-    "check:bitnob": "tsx scripts/check-bitnob.ts"
+    "check:bitnob": "tsx scripts/check-bitnob.ts",
+    "reconcile:loop": "tsx scripts/reconcile-loop.ts"
   },
   "dependencies": {
     "light-bolt11-decoder": "^3.2.0",

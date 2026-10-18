@@ -50,6 +50,10 @@ export function describe(type: string, source: string, p: P): { title: string; d
       return { title: `Remboursement, tentative ${p?.attempt ?? ""}`, detail: p?.address, tone: "info" };
     case "refund_payment":
       return { title: `Remboursement ${p?.status === "paid" ? "envoyé" : String(p?.status ?? "")}`, detail: p ? `${n(p.amount_sat)} sats` : undefined, tone: p?.status === "paid" ? "ok" : "info" };
+    case "payout_finalize_requested":
+      return { title: "Finalisation du payout demandée", detail: "Tracée avant l'appel : en cas de réponse perdue, aucun second payout ne sera créé", tone: "info" };
+    case "refund_blocked":
+      return { title: "Remboursement suspendu", detail: p?.reason, tone: "info" };
     case "refund_error":
       return { title: "Échec du remboursement", detail: p?.error, tone: "err" };
     case "invoice_error":

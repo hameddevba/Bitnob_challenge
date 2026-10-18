@@ -1,7 +1,7 @@
 import { decode } from "light-bolt11-decoder";
 import { pool, withTx } from "./db";
 import { BitnobError, payInvoice } from "./bitnob";
-import { logEvent } from "./transfers";
+import { logEvent, payoutCanStillComplete } from "./transfers";
 
 // Remboursement automatique vers l'adresse Lightning de l'expéditeur (LUD-16).
 // Garde-fous : domaine public en HTTPS uniquement, montant de la facture vérifié avant paiement,
@@ -62,7 +62,21 @@ export async function invoiceForAddress(address: string, sats: number, fetchImpl
 }
 
 // Rembourse un transfert REFUND_PENDING ou UNDERPAID qui a une adresse de remboursement.
-export async function attemptRefund(transferId: string): Promise<"refunded" | "pending" | "skipped" | "failed"> {
+export async function attemptRefund(transferId: string): Promise<"refunded" | "pending" | "skipped" | "failed" | "blocked"> {
+  // Jamais de remboursement si le payout peut encore livrer les FCFA (sinon l'argent part deux fois).
+  const { rows: pre } = await pool.query(
+    `SELECT status, bitnob_payout_id, refund_address FROM transfers WHERE id=$1`, [transferId]);
+  if (!pre[0]?.refund_address || !["REFUND_PENDING", "UNDERPAID"].includes(pre[0].status)) return "skipped";
+  if (await payoutCanStillComplete(transferId, pre[0].bitnob_payout_id)) {
+    const { rows: last } = await pool.query(
+      `SELECT event_type FROM transfer_events WHERE transfer_id=$1 ORDER BY id DESC LIMIT 1`, [transferId]);
+    if (last[0]?.event_type !== "refund_blocked") {
+      await logEvent(pool, transferId, "system", "refund_blocked",
+        { reason: "payout encore actif chez Bitnob : remboursement suspendu jusqu'à son échec ou son expiration" });
+    }
+    return "blocked";
+  }
+
   const claim = await withTx(async (c) => {
     const { rows } = await c.query(
       `SELECT * FROM transfers WHERE id=$1 AND status IN ('REFUND_PENDING','UNDERPAID')

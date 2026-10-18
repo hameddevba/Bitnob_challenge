@@ -1,8 +1,11 @@
+import { rateLimit } from "@/lib/rateLimit";
 import { createRecipient, HandleTakenError, ownerToken, publicBaseUrl, publicRecipient } from "@/lib/recipients";
 import { createRecipientSchema } from "@/lib/validators";
 
 // POST : créer un lien de paiement permanent (et l'adresse Lightning associée)
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "recipient", 5);
+  if (limited) return limited;
   const parsed = createRecipientSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return Response.json({ error: "Données invalides", details: parsed.error.flatten().fieldErrors }, { status: 400 });

@@ -1,9 +1,12 @@
+import { rateLimit } from "@/lib/rateLimit";
 import { pool } from "@/lib/db";
 import { potProgress, publicPot } from "@/lib/pots";
 import { getRecipientForOwner, publicBaseUrl, publicRecipient } from "@/lib/recipients";
 
 // GET : espace du bénéficiaire (historique des envois reçus + cagnottes). Jeton propriétaire requis.
 export async function GET(req: Request, { params }: { params: Promise<{ handle: string }> }) {
+  const limited = rateLimit(req, "dashboard", 60);
+  if (limited) return limited;
   const { handle } = await params;
   const r = await getRecipientForOwner(handle, req.headers.get("x-owner-token"));
   if (!r) return Response.json({ error: "Accès refusé" }, { status: 403 });

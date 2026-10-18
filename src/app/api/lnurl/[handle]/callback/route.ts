@@ -1,3 +1,4 @@
+import { rateLimit } from "@/lib/rateLimit";
 import { BitnobError } from "@/lib/bitnob";
 import { lnurlError, lnurlJson, sendableBounds } from "@/lib/lnurl";
 import { getRecipient, publicBaseUrl } from "@/lib/recipients";
@@ -5,6 +6,8 @@ import { createLightningAddressTransfer } from "@/lib/transfers";
 
 // GET ?amount=<msat>&comment=… : le portefeuille demande une facture du montant choisi
 export async function GET(req: Request, { params }: { params: Promise<{ handle: string }> }) {
+  const limited = rateLimit(req, "lnurl-callback", 10);
+  if (limited) return limited;
   const { handle } = await params;
   const r = await getRecipient(handle);
   if (!r) return lnurlError("Adresse inconnue", 404);

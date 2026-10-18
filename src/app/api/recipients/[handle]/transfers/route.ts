@@ -1,3 +1,4 @@
+import { rateLimit } from "@/lib/rateLimit";
 import QRCode from "qrcode";
 import { BitnobError } from "@/lib/bitnob";
 import { getRecipient } from "@/lib/recipients";
@@ -6,6 +7,8 @@ import { linkTransferSchema } from "@/lib/validators";
 
 // POST : envoi via un lien permanent. Le bénéficiaire est lu en base, jamais envoyé par le client.
 export async function POST(req: Request, { params }: { params: Promise<{ handle: string }> }) {
+  const limited = rateLimit(req, "link-transfer", 10);
+  if (limited) return limited;
   const { handle } = await params;
   const r = await getRecipient(handle);
   if (!r) return Response.json({ error: "Ce lien n'existe pas" }, { status: 404 });

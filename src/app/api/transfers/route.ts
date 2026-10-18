@@ -1,3 +1,4 @@
+import { rateLimit } from "@/lib/rateLimit";
 import QRCode from "qrcode";
 import { BitnobError } from "@/lib/bitnob";
 import { createTransfer } from "@/lib/transfers";
@@ -5,6 +6,8 @@ import { createTransferSchema } from "@/lib/validators";
 
 // POST : validation du récapitulatif → facture Lightning + QR code
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "transfer", 10);
+  if (limited) return limited;
   const parsed = createTransferSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return Response.json({ error: "Données invalides", details: parsed.error.flatten().fieldErrors }, { status: 400 });

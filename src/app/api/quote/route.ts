@@ -1,3 +1,4 @@
+import { rateLimit } from "@/lib/rateLimit";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { BitnobError, createPayoutQuote } from "@/lib/bitnob";
@@ -10,6 +11,8 @@ import { amountSchema } from "@/lib/validators";
 const schema = z.object({ amountFcfa: amountSchema });
 
 export async function POST(req: Request) {
+  const limited = rateLimit(req, "quote", 60);
+  if (limited) return limited;
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return Response.json({ error: `Montant invalide (entre ${MIN_FCFA} et ${MAX_FCFA} FCFA)` }, { status: 400 });
