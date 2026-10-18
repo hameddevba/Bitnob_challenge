@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { COUNTRIES, fcfa, MAX_FCFA, MIN_FCFA, NETWORKS, num, postJson, sats } from "../../ui";
 import { useQuote } from "../../useQuote";
+import { rememberTransfer } from "../../store";
 
 type Pot = {
   slug: string; title: string; goalFcfa: number; closed: boolean;
@@ -75,6 +76,7 @@ export default function PotPage({ params }: { params: Promise<{ slug: string }> 
       const t = await postJson<{ id: string; token: string }>(`/api/pots/${encodeURIComponent(slug)}/contributions`, {
         amountFcfa: amount, ...form,
       });
+      rememberTransfer({ id: t.id, token: t.token, amountFcfa: amount, recipientName: pot!.recipient.name, network: pot!.recipient.network });
       router.push(`/pay/${t.id}?token=${t.token}`);
     } catch (e) {
       setError((e as Error).message);

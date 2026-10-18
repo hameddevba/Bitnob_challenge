@@ -3,6 +3,7 @@
 import { Suspense, use, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { fcfa, NETWORKS, num } from "../../../ui";
+import { rememberSpace } from "../../../store";
 
 type Dashboard = {
   recipient: { handle: string; name: string; phone: string; network: string; link: string; lightningAddress: string };
@@ -40,7 +41,12 @@ function Manage({ handle }: { handle: string }) {
   const load = useCallback(async () => {
     const r = await fetch(`/api/recipients/${encodeURIComponent(handle)}/dashboard`, { headers: { "x-owner-token": key }, cache: "no-store" });
     if (r.status === 403) return setDenied(true);
-    if (r.ok) setData(await r.json());
+    if (r.ok) {
+      const d = (await r.json()) as Dashboard;
+      setData(d);
+      // Ce téléphone retient l'espace : accessible ensuite depuis l'onglet Activité
+      rememberSpace({ handle: d.recipient.handle, name: d.recipient.name, manageLink: window.location.href });
+    }
   }, [handle, key]);
 
   useEffect(() => { load(); const t = setInterval(load, 10000); return () => clearInterval(t); }, [load]);
@@ -108,7 +114,7 @@ function Manage({ handle }: { handle: string }) {
             <li key={p.slug}>
               <div className="pot-head">
                 <a href={p.link} className="pot-title">{p.title}</a>
-                <button className="inline-copy" onClick={() => copy(p.link, p.slug)}>{copied === p.slug ? "Copié" : "Copier le lien"}</button>
+                <button className="btn secondary small" onClick={() => copy(p.link, p.slug)}>{copied === p.slug ? "Copié" : "Copier"}</button>
               </div>
               <div className="bar"><span style={{ width: `${pct}%` }} /></div>
               <p className="note">{fcfa(p.progress.raisedFcfa)} sur {fcfa(p.goalFcfa)}, {p.progress.contributions} contribution{p.progress.contributions > 1 ? "s" : ""}</p>

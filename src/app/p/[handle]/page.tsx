@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { COUNTRIES, fcfa, MAX_FCFA, MIN_FCFA, NETWORKS, num, postJson, sats } from "../../ui";
 import { useQuote } from "../../useQuote";
+import { rememberTransfer } from "../../store";
 
 type Payee = { handle: string; name: string; phone: string; network: string; lightningAddress: string };
 type Created = { id: string; token: string };
@@ -48,6 +49,7 @@ export default function PayLinkPage({ params }: { params: Promise<{ handle: stri
     setBusy(true); setError(null);
     try {
       const t = await postJson<Created>(`/api/recipients/${encodeURIComponent(handle)}/transfers`, { amountFcfa: amount, ...sender });
+      rememberTransfer({ id: t.id, token: t.token, amountFcfa: amount, recipientName: payee!.name, network: payee!.network });
       router.push(`/pay/${t.id}?token=${t.token}`);
     } catch (e) {
       setError((e as Error).message);
@@ -104,12 +106,15 @@ export default function PayLinkPage({ params }: { params: Promise<{ handle: stri
       </div>
       {(error || quoteError) && <div className="alert err">{error ?? quoteError}</div>}
 
-      <p className="note">
-        Depuis un portefeuille Lightning compatible, vous pouvez aussi envoyer directement à{" "}
-        <button className="inline-copy" onClick={async () => {
+      <div className="ln-box">
+        <div>
+          <div className="ln-label">Ou depuis un portefeuille Lightning compatible</div>
+          <div className="ln-addr">{payee.lightningAddress}</div>
+        </div>
+        <button className="btn secondary small" onClick={async () => {
           await navigator.clipboard.writeText(payee.lightningAddress); setCopied(true); setTimeout(() => setCopied(false), 1500);
-        }}>{payee.lightningAddress}</button>{copied && " (copiée)"}.
-      </p>
+        }}>{copied ? "Copiée" : "Copier"}</button>
+      </div>
 
       <div className="actions">
         <button className="btn" disabled={!valid || busy} onClick={pay}>

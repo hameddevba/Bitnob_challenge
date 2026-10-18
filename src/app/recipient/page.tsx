@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { COUNTRIES, fcfa, MAX_FCFA, MIN_FCFA, NETWORKS, postJson, sats, type Quote } from "../ui";
+import { rememberTransfer } from "../store";
 
 const SN_PHONE = /^(\+?221)?7\d{8}$/;
 const clean = (p: string) => p.replace(/[\s.\-()]/g, "");
@@ -64,6 +65,7 @@ function RecipientForm() {
         senderCountry: form.senderCountry,
         refundAddress: form.refundAddress,
       });
+      rememberTransfer({ id: t.id, token: t.token, amountFcfa: amount, recipientName: form.recipientName, network: form.recipientNetwork });
       router.push(`/pay/${t.id}?token=${t.token}`);
     } catch (e) {
       setError((e as Error).message);
@@ -90,7 +92,7 @@ function RecipientForm() {
 
         <div className="actions">
           <button className="btn" disabled={busy} onClick={confirm}>{busy ? "Création de la facture…" : "Payer en bitcoin"}</button>
-          <button className="text-btn" onClick={() => setRecap(null)} disabled={busy}>Modifier</button>
+          <button className="btn secondary" onClick={() => setRecap(null)} disabled={busy}>Modifier</button>
         </div>
       </div>
     );
@@ -150,9 +152,7 @@ function RecipientForm() {
       {error && <div className="alert err">{error}</div>}
 
       <div className="actions">
-        <button className="btn" disabled={!valid || busy} onClick={showRecap}>{busy ? "Calcul du taux…" : "Vérifier l'envoi"}</button>
-        <button className="text-btn" onClick={() => router.push("/")}>Changer le montant</button>
-      </div>
+        <button className="btn" disabled={!valid || busy} onClick={showRecap}>{busy ? "Calcul du taux…" : "Vérifier l'envoi"}</button>      </div>
     </div>
   );
 }

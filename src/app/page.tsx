@@ -5,23 +5,8 @@ import { useRouter } from "next/navigation";
 import { fcfa, MAX_FCFA, MIN_FCFA, num, sats } from "./ui";
 import { useQuote } from "./useQuote";
 
-type Mode = "send" | "receive";
-
-// Accueil : deux usages, envoyer (montant → bénéficiaire → paiement) ou recevoir (lien, cagnotte, adresse)
-export default function Home() {
-  const [mode, setMode] = useState<Mode>("send");
-  return (
-    <div className="screen">
-      <div className="switch" role="tablist" aria-label="Que voulez-vous faire ?">
-        <button role="tab" aria-selected={mode === "send"} onClick={() => setMode("send")}>Envoyer</button>
-        <button role="tab" aria-selected={mode === "receive"} onClick={() => setMode("receive")}>Recevoir</button>
-      </div>
-      {mode === "send" ? <Send /> : <Receive />}
-    </div>
-  );
-}
-
-function Send() {
+// Onglet « Envoyer » : montant en FCFA → bénéficiaire → paiement
+export default function SendPage() {
   const router = useRouter();
   const [raw, setRaw] = useState("5000");
   const amount = Number(raw.replace(/\D/g, ""));
@@ -29,7 +14,7 @@ function Send() {
   const pending = loading ? "…" : "—";
 
   return (
-    <>
+    <div className="screen">
       <h1>Combien envoyer{" "}?</h1>
       <p className="lede">Le bénéficiaire reçoit exactement ce montant sur son mobile money.</p>
 
@@ -58,44 +43,6 @@ function Send() {
           Continuer
         </button>
       </div>
-    </>
-  );
-}
-
-const WAYS = [
-  {
-    title: "Votre lien de paiement",
-    text: "Une page à votre nom à partager sur WhatsApp. Vos proches choisissent le montant et paient en bitcoin, vous recevez des FCFA.",
-  },
-  {
-    title: "Des cagnottes",
-    text: "Scolarité, Tabaski, santé : fixez un objectif, toute la famille contribue, chaque contribution arrive directement sur votre compte.",
-  },
-  {
-    title: "Une adresse Lightning",
-    text: "Une adresse du type awa@yonne pour recevoir depuis un portefeuille Lightning compatible.",
-  },
-];
-
-function Receive() {
-  return (
-    <>
-      <h1>Recevez de l&apos;argent de vos proches</h1>
-      <p className="lede">Ils paient en bitcoin depuis n&apos;importe quel pays. Vous recevez des FCFA sur Orange Money, Wave, Free ou Expresso.</p>
-
-      <ul className="ways">
-        {WAYS.map((w) => (
-          <li key={w.title}>
-            <strong>{w.title}</strong>
-            <span>{w.text}</span>
-          </li>
-        ))}
-      </ul>
-      <p className="note">Votre historique et vos cagnottes s&apos;ouvrent avec le lien de gestion donné à la création. Gardez-le précieusement.</p>
-
-      <div className="actions">
-        <a className="btn" href="/creer">Créer mon lien</a>
-      </div>
-    </>
+    </div>
   );
 }

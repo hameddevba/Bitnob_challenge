@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { NETWORKS, postJson } from "../ui";
+import { rememberSpace } from "../store";
 
 type Created = { handle: string; name: string; network: string; link: string; lightningAddress: string; manageLink: string };
 
@@ -39,10 +40,12 @@ export default function CreateLinkPage() {
   async function submit() {
     setBusy(true); setError(null);
     try {
-      setCreated(await postJson<Created>("/api/recipients", {
+      const c = await postJson<Created>("/api/recipients", {
         handle: form.handle, recipientName: form.recipientName,
         recipientPhone: form.recipientPhone, recipientNetwork: form.recipientNetwork,
-      }));
+      });
+      rememberSpace({ handle: c.handle, name: c.name, manageLink: c.manageLink }); // l'onglet Activité s'en souvient
+      setCreated(c);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -82,7 +85,7 @@ export default function CreateLinkPage() {
 
         <div className="share">
           <div className="label">Votre lien de gestion (secret)</div>
-          <p className="note">Il ouvre votre historique et vos cagnottes. Gardez-le pour vous : il n&apos;est affiché qu&apos;une fois.</p>
+          <p className="note">Il ouvre votre historique et vos cagnottes. Ce téléphone s&apos;en souvient (onglet Activité) ; copiez-le pour l&apos;ouvrir ailleurs et gardez-le pour vous.</p>
           <div className="row-btns" style={{ marginTop: 10 }}>
             <button className="btn secondary" onClick={() => copy(created.manageLink, "manage")}>{copied === "manage" ? "Copié" : "Copier"}</button>
             <a className="btn secondary" href={created.manageLink}>Ouvrir</a>
@@ -139,9 +142,7 @@ export default function CreateLinkPage() {
       {error && <div className="alert err">{error}</div>}
 
       <div className="actions">
-        <button className="btn" disabled={!valid || busy} onClick={submit}>{busy ? "Création…" : "Créer mon lien"}</button>
-        <a className="text-btn" href="/">Envoyer de l&apos;argent plutôt</a>
-      </div>
+        <button className="btn" disabled={!valid || busy} onClick={submit}>{busy ? "Création…" : "Créer mon lien"}</button>      </div>
     </div>
   );
 }

@@ -37,7 +37,7 @@ function JournalView({ id }: { id: string }) {
   }, [id, token]);
 
   const back = `/pay/${id}?token=${encodeURIComponent(token)}`;
-  if (error) return <div className="screen"><h1>Journal indisponible</h1><div className="alert err">{error}</div><nav className="nav-links"><a href={back}>Retour à l&apos;envoi</a><a href="/">Accueil</a></nav></div>;
+  if (error) return <div className="screen"><h1>Journal indisponible</h1><div className="alert err">{error}</div><div className="actions"><a className="btn secondary" href={back}>Revenir à l&apos;envoi</a></div></div>;
   if (!j) return <div className="screen"><p className="lede">Chargement du journal…</p></div>;
 
   return (
@@ -62,10 +62,9 @@ function JournalView({ id }: { id: string }) {
       </ol>
       {!TERMINAL.includes(j.transfer.status) && <p className="note">Mise à jour automatique en cours…</p>}
 
-      <nav className="nav-links" aria-label="Navigation">
-        <a href={back}>Retour à l&apos;envoi</a>
-        <a href="/">Faire un nouvel envoi</a>
-      </nav>
+      <div className="actions">
+        <a className="btn secondary" href={back}>Revenir à l&apos;envoi</a>
+      </div>
     </div>
   );
 }

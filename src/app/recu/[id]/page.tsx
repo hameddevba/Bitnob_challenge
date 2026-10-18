@@ -32,10 +32,7 @@ function ReceiptView({ id }: { id: string }) {
       <div className="screen">
         <h1>Reçu indisponible</h1>
         <div className="alert err">{error}</div>
-        <nav className="nav-links" aria-label="Navigation">
-          <a href={`/pay/${id}?token=${encodeURIComponent(token)}`}>Retour à l&apos;envoi</a>
-          <a href="/">Accueil</a>
-        </nav>
+        <div className="actions"><a className="btn secondary" href={`/pay/${id}?token=${encodeURIComponent(token)}`}>Revenir à l&apos;envoi</a></div>
       </div>
     );
   }
@@ -80,13 +77,12 @@ function ReceiptView({ id }: { id: string }) {
 
       <div className="actions">
         <a className="btn" href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noreferrer">Partager sur WhatsApp</a>
-        <button className="btn secondary" onClick={async () => { await navigator.clipboard.writeText(url); setShared(true); setTimeout(() => setShared(false), 1500); }}>
-          {shared ? "Lien copié" : "Copier le lien du reçu"}
-        </button>
-        <nav className="nav-links" aria-label="Navigation">
-          <a href={`/pay/${r.id}?token=${encodeURIComponent(token)}`}>Retour à l&apos;envoi</a>
-          <a href="/">Faire un nouvel envoi</a>
-        </nav>
+        <div className="btn-row">
+          <button className="btn secondary" onClick={async () => { await navigator.clipboard.writeText(url); setShared(true); setTimeout(() => setShared(false), 1500); }}>
+            {shared ? "Lien copié" : "Copier le lien"}
+          </button>
+          <a className="btn secondary" href="/">Nouvel envoi</a>
+        </div>
       </div>
     </div>
   );
