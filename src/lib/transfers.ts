@@ -262,6 +262,45 @@ export async function reconcile() {
   return results;
 }
 
+// ---------- 4 bis. Simulation sandbox (tests dans le navigateur) ----------
+// Les factures sandbox (lntb…) ne sont payables par aucun portefeuille grand public.
+// On simule UNIQUEMENT le paiement entrant ; le payout part réellement chez Bitnob sandbox.
+// S'il échoue seulement faute de solde sandbox, on marque un succès « SIMULATED ».
+
+export async function simulateSandboxPayment(transferId: string): Promise<string | null> {
+  const { isSimulationEnabled } = await import("./environment");
+  // Vérification fraîche chez Bitnob : jamais de simulation avec des clés de production.
+  if (!(await isSimulationEnabled({ fresh: true }))) throw new Error("Simulation désactivée");
+
+  const paid = await withTx(async (c) => {
+    const { rows } = await c.query(`SELECT status FROM transfers WHERE id=$1 FOR UPDATE`, [transferId]);
+    if (rows[0]?.status !== "AWAITING_PAYMENT") return false;
+    await c.query(
+      `UPDATE transfers SET status='PAYOUT_PENDING', btc_received_sats=amount_btc_sats WHERE id=$1`, [transferId]);
+    await logEvent(c, transferId, "system", "payment_simulated", { note: "sandbox : paiement Lightning simulé" });
+    return true;
+  });
+  if (!paid) return null;
+
+  await runPayout(transferId);
+
+  const { rows } = await pool.query(
+    `SELECT t.status,
+       (SELECT e.payload::text FROM transfer_events e WHERE e.transfer_id=t.id AND e.event_type='payout_error'
+        ORDER BY e.id DESC LIMIT 1) AS last_error
+     FROM transfers t WHERE t.id=$1`, [transferId]);
+  const { status, last_error } = rows[0];
+  if (status === "PAYOUT_FAILED" && String(last_error).includes("INSUFFICIENT_FUNDS")) {
+    await pool.query(
+      `UPDATE transfers SET status='PAYOUT_SUCCESS', payout_status='SIMULATED' WHERE id=$1 AND status='PAYOUT_FAILED'`,
+      [transferId]);
+    await logEvent(pool, transferId, "system", "payout_simulated",
+      { note: "sandbox : payout accepté par Bitnob (initialize), finalisation simulée faute de solde sandbox" });
+    return "PAYOUT_SUCCESS";
+  }
+  return status;
+}
+
 // ---------- 5. Retrouver un transfert depuis un webhook ----------
 
 export async function findTransferIdForEvent(data: Record<string, unknown>): Promise<string | null> {

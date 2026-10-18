@@ -13,6 +13,7 @@ type Transfer = {
   id: string; status: Status; amountFcfa: number; feeFcfa: number; totalSats: number;
   recipientName: string; recipientPhone: string; recipientNetwork: string;
   paymentRequest: string | null; expiresAt: string | null;
+  simulated?: boolean; canSimulate?: boolean;
 };
 
 const FAILED: Status[] = ["PAYOUT_FAILED", "EXPIRED", "CANCELLED", "REFUND_PENDING", "UNDERPAID"];
@@ -50,6 +51,19 @@ function PayView({ id }: { id: string }) {
   const [qr, setQr] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [simulating, setSimulating] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  async function simulate() {
+    setSimulating(true);
+    try {
+      const res = await fetch(`/api/transfers/${id}/simulate?token=${encodeURIComponent(token)}`, { method: "POST" });
+      if (!res.ok) setError((await res.json().catch(() => ({}))).error ?? `Erreur ${res.status}`);
+    } finally {
+      setSimulating(false);
+      setRefreshKey((k) => k + 1); // relance le polling
+    }
+  }
   const left = useCountdown(t?.status === "AWAITING_PAYMENT" ? t.expiresAt : null);
 
   // Polling du statut (le webhook Bitnob met la base à jour côté serveur)
@@ -72,7 +86,7 @@ function PayView({ id }: { id: string }) {
     }
     tick();
     return () => { stop = true; clearTimeout(timer); };
-  }, [id, token]);
+  }, [id, token, refreshKey]);
 
   useEffect(() => {
     if (t?.paymentRequest) {
@@ -100,6 +114,11 @@ function PayView({ id }: { id: string }) {
           <div className="check">✓</div>
           <div className="big">{fcfa(t.amountFcfa)}</div>
           <p className="sub">envoyés à {t.recipientName} · {network} {t.recipientPhone}</p>
+          {t.simulated && (
+            <div className="alert warn">
+              Simulation sandbox : paiement Lightning simulé, payout accepté par Bitnob sandbox. Aucun argent n&apos;a bougé.
+            </div>
+          )}
           <a className="btn" href="/">Nouvel envoi</a>
         </section>
       </>
@@ -126,6 +145,11 @@ function PayView({ id }: { id: string }) {
             setCopied(true); setTimeout(() => setCopied(false), 1500);
           }}>{copied ? "Copié ✓" : "Copier la facture"}</button>
           <div className="invoice">{t.paymentRequest}</div>
+          {t.canSimulate && (
+            <button className="btn sim" disabled={simulating} onClick={simulate}>
+              {simulating ? "Simulation en cours…" : "Simuler le paiement (sandbox)"}
+            </button>
+          )}
         </section>
       )}
 

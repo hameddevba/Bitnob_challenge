@@ -1,3 +1,4 @@
+import { isSimulationEnabled } from "@/lib/environment";
 import { getTransferForViewer, refreshTransfer } from "@/lib/transfers";
 import { maskPhone } from "@/lib/validators";
 
@@ -32,5 +33,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     paymentRequest: t.status === "AWAITING_PAYMENT" ? t.ln_payment_request : null,
     expiresAt: t.expires_at,
     updatedAt: t.updated_at,
+    simulated: t.payout_status === "SIMULATED",
+    canSimulate: t.status === "AWAITING_PAYMENT" && (await isSimulationEnabled()),
   });
 }

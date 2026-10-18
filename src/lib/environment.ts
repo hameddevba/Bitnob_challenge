@@ -1,16 +1,37 @@
+import { createHash } from "node:crypto";
 import { bitnob } from "./bitnob";
 
-// Environnement réel des clés Bitnob (GET /api/whoami → "sandbox" | "production"), mis en cache.
-let cached: Promise<string> | null = null;
+// Environnement réel des clés Bitnob (GET /api/whoami → "sandbox" | "live").
+// Cache lié aux clés (un changement de clé l'invalide) et limité à 60 s.
+let cached: { key: string; at: number; value: Promise<string> } | null = null;
+
+function keyFingerprint() {
+  return createHash("sha256")
+    .update(`${process.env.BITNOB_CLIENT_ID}:${process.env.BITNOB_CLIENT_SECRET}`).digest("hex");
+}
+
+function fetchEnvironment(): Promise<string> {
+  return bitnob<{ environment?: string }>("GET", "/api/whoami").then((w) => w.environment ?? "inconnu");
+}
 
 export function getBitnobEnvironment(): Promise<string> {
-  cached ??= bitnob<{ environment?: string }>("GET", "/api/whoami")
-    .then((w) => w.environment ?? "inconnu")
-    .catch(() => {
-      cached = null; // réessayer au prochain rendu
+  const key = keyFingerprint();
+  if (!cached || cached.key !== key || Date.now() - cached.at > 60_000) {
+    const value = fetchEnvironment().catch(() => {
+      cached = null; // réessayer au prochain appel
       return "indisponible";
     });
-  return cached;
+    cached = { key, at: Date.now(), value };
+  }
+  return cached.value;
+}
+
+// Simulation de paiement : seulement si explicitement activée ET si Bitnob confirme le sandbox.
+// fresh=true : interroge Bitnob sans cache (obligatoire avant toute action).
+export async function isSimulationEnabled(opts: { fresh?: boolean } = {}): Promise<boolean> {
+  if (process.env.SANDBOX_SIMULATION !== "true") return false;
+  const env = opts.fresh ? await fetchEnvironment().catch(() => "indisponible") : await getBitnobEnvironment();
+  return env === "sandbox";
 }
 
 // Plafonds partagés serveur / client (variables publiques, non secrètes)

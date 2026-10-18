@@ -86,6 +86,8 @@ input:focus, select:focus { border-color: var(--ink); box-shadow: 0 0 0 3px rgba
 .alert { border-radius: 12px; padding: 12px 14px; font-size: 14px; margin-top: 14px; }
 .alert.err { background: var(--err-bg); color: var(--err); }
 .alert.ok { background: var(--ok-bg); color: var(--ok); }
+.alert.warn { background: #fff4e5; color: var(--warn); text-align: left; }
+.btn.sim { background: transparent; color: var(--warn); border: 1px dashed var(--warn); }
 
 .qr { display: grid; place-items: center; padding: 8px 0 4px; }
 .qr img { width: 100%; max-width: 280px; height: auto; image-rendering: pixelated; border-radius: 12px; }
