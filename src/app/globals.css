@@ -132,6 +132,10 @@ h1 { font-family: var(--display); font-weight: 700; font-size: 28px; line-height
 .proof .hash code { display: block; font-size: 12px; word-break: break-all; background: var(--field); padding: 10px 12px; border-radius: 10px; line-height: 1.5; }
 .alert.ok { background: var(--ok-bg); color: var(--accent); }
 
+.nav-links { display: flex; justify-content: space-between; gap: 12px; margin-top: 16px; font-size: 14px; }
+.nav-links a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; padding: 4px 0; }
+.nav-links a:hover { color: var(--ink); }
+
 .alert { border-radius: 12px; padding: 13px 15px; font-size: 14px; margin-top: 18px; }
 .alert.err { background: var(--err-bg); color: var(--err); }
 .alert.warn { background: var(--warn-bg); color: var(--warn); }

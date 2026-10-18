@@ -27,7 +27,18 @@ function ReceiptView({ id }: { id: string }) {
       .catch(() => setError("Reçu introuvable"));
   }, [id, token]);
 
-  if (error) return <div className="screen"><h1>Reçu indisponible</h1><div className="alert err">{error}</div></div>;
+  if (error) {
+    return (
+      <div className="screen">
+        <h1>Reçu indisponible</h1>
+        <div className="alert err">{error}</div>
+        <nav className="nav-links" aria-label="Navigation">
+          <a href={`/pay/${id}?token=${encodeURIComponent(token)}`}>Retour à l&apos;envoi</a>
+          <a href="/">Accueil</a>
+        </nav>
+      </div>
+    );
+  }
   if (!r) return <div className="screen"><p className="lede">Chargement du reçu…</p></div>;
 
   const network = NETWORKS.find((n) => n.value === r.recipientNetwork)?.label ?? r.recipientNetwork;
@@ -72,6 +83,10 @@ function ReceiptView({ id }: { id: string }) {
         <button className="btn secondary" onClick={async () => { await navigator.clipboard.writeText(url); setShared(true); setTimeout(() => setShared(false), 1500); }}>
           {shared ? "Lien copié" : "Copier le lien du reçu"}
         </button>
+        <nav className="nav-links" aria-label="Navigation">
+          <a href={`/pay/${r.id}?token=${encodeURIComponent(token)}`}>Retour à l&apos;envoi</a>
+          <a href="/">Faire un nouvel envoi</a>
+        </nav>
       </div>
     </div>
   );
