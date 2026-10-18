@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { NETWORKS, postJson } from "../ui";
+import NetworkLogo from "../NetworkLogo";
 import { rememberSpace } from "../store";
 
 type Created = { handle: string; name: string; network: string; link: string; lightningAddress: string; manageLink: string };
@@ -106,7 +107,7 @@ export default function CreateLinkPage() {
         {NETWORKS.map((n) => (
           <button key={n.value} type="button" aria-pressed={form.recipientNetwork === n.value}
             onClick={() => setForm({ ...form, recipientNetwork: n.value })}>
-            <span className="dot" style={{ background: n.color }} />{n.label}
+            <NetworkLogo network={n.value} size={26} />{n.label}
           </button>
         ))}
       </div>

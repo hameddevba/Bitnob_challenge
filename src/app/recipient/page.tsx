@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { COUNTRIES, fcfa, MAX_FCFA, MIN_FCFA, NETWORKS, postJson, sats, type Quote } from "../ui";
+import NetworkLogo from "../NetworkLogo";
 import { rememberTransfer } from "../store";
 
 const SN_PHONE = /^(\+?221)?7\d{8}$/;
@@ -108,7 +109,7 @@ function RecipientForm() {
         {NETWORKS.map((n) => (
           <button key={n.value} type="button" aria-pressed={form.recipientNetwork === n.value}
             onClick={() => update({ recipientNetwork: n.value })}>
-            <span className="dot" style={{ background: n.color }} />{n.label}
+            <NetworkLogo network={n.value} size={26} />{n.label}
           </button>
         ))}
       </div>

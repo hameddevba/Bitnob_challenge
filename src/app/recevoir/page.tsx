@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { savedSpace, type SavedSpace } from "../store";
 import Flow from "../Flow";
+import { NetworkStrip } from "../NetworkLogo";
 
 const WAYS = [
   {
@@ -30,6 +31,7 @@ export default function ReceivePage() {
       <h1>Recevez des FCFA <span className="grad">depuis n&apos;importe quel pays</span></h1>
       <p className="lede">Recevez de l&apos;argent depuis n&apos;importe quel pays et retirez-le sur votre Mobile Money.</p>
       <p className="reach"><strong>Sénégal</strong> aujourd&apos;hui (Orange Money, Wave, Free, Expresso). Côte d&apos;Ivoire, Niger, Ghana, Kenya… déjà couverts par Bitnob, sans changer l&apos;architecture.</p>
+      <NetworkStrip size={48} />
       <Flow />
 
       {space && (

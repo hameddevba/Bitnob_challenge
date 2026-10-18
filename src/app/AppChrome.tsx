@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import Hero from "./Hero";
 
 // Habillage façon application mobile : entête (logo ou bouton retour) + barre d'onglets en bas.
 
@@ -30,6 +31,8 @@ export default function AppChrome({ env, live, children }: { env: string; live: 
   return (
     <>
     <BitcoinBackdrop />
+    <div className="shell">
+    <Hero />
     <div className={`app${withNav ? " with-nav" : ""}`}>
       <header className="top">
         {topLevel ? (
@@ -54,6 +57,7 @@ export default function AppChrome({ env, live, children }: { env: string; live: 
           })}
         </nav>
       )}
+    </div>
     </div>
     </>
   );

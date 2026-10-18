@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { COUNTRIES, fcfa, MAX_FCFA, MIN_FCFA, NETWORKS, num, postJson, sats } from "../../ui";
+import NetworkLogo from "../../NetworkLogo";
 import { useQuote } from "../../useQuote";
 import { rememberTransfer } from "../../store";
 
@@ -62,7 +63,7 @@ export default function PayLinkPage({ params }: { params: Promise<{ handle: stri
       <div className="payee">
         <div className="avatar" aria-hidden>
           {payee.name.trim()[0]?.toUpperCase()}
-          <span className="dot" style={{ background: network.color }} />
+          <span className="avatar-net"><NetworkLogo network={network.value} size={18} /></span>
         </div>
         <div>
           <div className="who">{payee.name}</div>
