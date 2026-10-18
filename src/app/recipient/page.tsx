@@ -6,7 +6,8 @@ import { COUNTRIES, fcfa, MAX_FCFA, MIN_FCFA, NETWORKS, postJson, sats, type Quo
 
 const SN_PHONE = /^(\+?221)?7\d{8}$/;
 const clean = (p: string) => p.replace(/[\s.\-()]/g, "");
-const formatPhone = (p: string) => clean(p).replace(/^\+?221/, "").replace(/^(\d{2})(\d{3})(\d{2})(\d{2})$/, "$1 $2 $3 $4");
+const local = (p: string) => clean(p).replace(/^\+?221/, "");
+const formatPhone = (p: string) => local(p).replace(/^(\d{2})(\d{3})(\d{2})(\d{2})$/, "$1 $2 $3 $4");
 
 type Created = { id: string; token: string };
 
@@ -24,22 +25,21 @@ function RecipientForm() {
 
   if (!(amount >= MIN_FCFA && amount <= MAX_FCFA)) {
     return (
-      <section className="card">
+      <div className="screen">
         <h1>Montant manquant</h1>
-        <button className="btn" onClick={() => router.push("/")}>Saisir un montant</button>
-      </section>
+        <p className="lede">Commencez par choisir combien envoyer.</p>
+        <div className="actions"><button className="btn" onClick={() => router.push("/")}>Choisir un montant</button></div>
+      </div>
     );
   }
 
-  const set = (k: keyof typeof form) => (e: { target: { value: string } }) => {
-    setForm({ ...form, [k]: e.target.value });
-    setRecap(null);
-  };
+  const update = (patch: Partial<typeof form>) => { setForm({ ...form, ...patch }); setRecap(null); };
+  const set = (k: keyof typeof form) => (e: { target: { value: string } }) => update({ [k]: e.target.value });
+
   const phoneOk = SN_PHONE.test(clean(form.recipientPhone));
-  const phonesMatch = clean(form.confirmPhone) !== "" &&
-    clean(form.recipientPhone).replace(/^\+?221/, "") === clean(form.confirmPhone).replace(/^\+?221/, "");
+  const phonesMatch = clean(form.confirmPhone) !== "" && local(form.recipientPhone) === local(form.confirmPhone);
   const valid = form.recipientName.trim().length >= 2 && phoneOk && phonesMatch && form.senderName.trim().length >= 2;
-  const networkLabel = NETWORKS.find((n) => n.value === form.recipientNetwork)?.label;
+  const network = NETWORKS.find((n) => n.value === form.recipientNetwork)!;
 
   async function showRecap() {
     setBusy(true); setError(null);
@@ -72,75 +72,81 @@ function RecipientForm() {
 
   if (recap) {
     return (
-      <>
-        <div className="steps"><span className="on" /><span className="on" /><span /></div>
-        <section className="card">
-          <h1>Vérifiez avant de payer</h1>
-          <p className="sub">Un envoi mobile money ne peut pas être annulé.</p>
-          <div className="row"><span className="k">Bénéficiaire</span><span className="v">{form.recipientName}</span></div>
-          <div className="row"><span className="k">Numéro {networkLabel}</span><span className="v">{formatPhone(form.recipientPhone)}</span></div>
-          <div className="row"><span className="k">Expéditeur</span><span className="v">{form.senderName}</span></div>
-          <div className="quote">
-            <div className="row"><span className="k">Reçoit</span><span className="v">{fcfa(recap.amountFcfa)}</span></div>
-            <div className="row"><span className="k">Frais de service</span><span className="v">{fcfa(recap.feeFcfa)}</span></div>
-            <div className="row total"><span className="k">Vous payez</span><span className="v sats">{sats(recap.totalSats)}</span></div>
-            <p className="hint">Montant définitif fixé à la validation. Paiement en Bitcoin Lightning.</p>
-          </div>
-          {error && <div className="alert err">{error}</div>}
-          <button className="btn" disabled={busy} onClick={confirm}>{busy ? "Création de la facture…" : "Valider et payer"}</button>
-          <button className="link" onClick={() => setRecap(null)} disabled={busy}>Modifier</button>
-        </section>
-      </>
+      <div className="screen">
+        <div className="progress" aria-label="Étape 2 sur 3"><span className="on" /><span className="on" /><span /></div>
+        <h1>Vérifiez l&apos;envoi</h1>
+        <p className="lede">Un envoi sur mobile money ne peut pas être annulé.</p>
+
+        <div className="receipt">
+          <div className="line"><span className="k">Bénéficiaire</span><span className="v">{form.recipientName}</span></div>
+          <div className="line"><span className="k">{network.label}</span><span className="v">{formatPhone(form.recipientPhone)}</span></div>
+          <div className="line"><span className="k">Expéditeur</span><span className="v">{form.senderName}</span></div>
+          <div className="line"><span className="k">Reçoit</span><span className="v">{fcfa(recap.amountFcfa)}</span></div>
+          <div className="line"><span className="k">Frais</span><span className="v">{fcfa(recap.feeFcfa)}</span></div>
+          <div className="line total"><span className="k">À payer en bitcoin</span><span className="v sats">{sats(recap.totalSats)}</span></div>
+        </div>
+        {error && <div className="alert err">{error}</div>}
+
+        <div className="actions">
+          <button className="btn" disabled={busy} onClick={confirm}>{busy ? "Création de la facture…" : "Payer en bitcoin"}</button>
+          <button className="text-btn" onClick={() => setRecap(null)} disabled={busy}>Modifier</button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <>
-      <div className="steps"><span className="on" /><span className="on" /><span /></div>
-      <section className="card">
-        <h1>À qui envoyez-vous {fcfa(amount)} ?</h1>
-        <p className="sub">Le bénéficiaire n&apos;a besoin que de son compte mobile money.</p>
+    <div className="screen">
+      <div className="progress" aria-label="Étape 2 sur 3"><span className="on" /><span className="on" /><span /></div>
+      <h1>À qui envoyer {fcfa(amount)}{" "}?</h1>
+      <p className="lede">Le bénéficiaire a seulement besoin d&apos;un compte mobile money.</p>
 
-        <label>Réseau</label>
-        <div className="networks">
-          {NETWORKS.map((n) => (
-            <button key={n.value} type="button" className={form.recipientNetwork === n.value ? "on" : ""}
-              onClick={() => { setForm({ ...form, recipientNetwork: n.value }); setRecap(null); }}>
-              {n.label}
-            </button>
-          ))}
-        </div>
+      <div className="networks" role="group" aria-label="Opérateur">
+        {NETWORKS.map((n) => (
+          <button key={n.value} type="button" aria-pressed={form.recipientNetwork === n.value}
+            onClick={() => update({ recipientNetwork: n.value })}>
+            <span className="dot" style={{ background: n.color }} />{n.label}
+          </button>
+        ))}
+      </div>
 
+      <div className="field">
         <label htmlFor="rn">Nom du bénéficiaire</label>
-        <input id="rn" autoComplete="off" placeholder="ex. Awa Diop" value={form.recipientName} onChange={set("recipientName")} />
-
-        <label htmlFor="rp">Numéro {networkLabel} Money</label>
-        <input id="rp" inputMode="tel" placeholder="77 123 45 67" value={form.recipientPhone} onChange={set("recipientPhone")} />
-        {form.recipientPhone && !phoneOk && <div className="field-err">Numéro sénégalais à 9 chiffres commençant par 7.</div>}
-
-        <label htmlFor="rc">Confirmez le numéro</label>
+        <input id="rn" autoComplete="off" placeholder="Awa Diop" value={form.recipientName} onChange={set("recipientName")} />
+      </div>
+      <div className="field">
+        <label htmlFor="rp">Numéro {network.label}</label>
+        <input id="rp" inputMode="tel" placeholder="77 123 45 67" value={form.recipientPhone} onChange={set("recipientPhone")}
+          aria-invalid={form.recipientPhone !== "" && !phoneOk} />
+        {form.recipientPhone && !phoneOk && <p className="error-text">Entrez un numéro sénégalais à 9 chiffres commençant par 7.</p>}
+      </div>
+      <div className="field">
+        <label htmlFor="rc">Retapez le numéro</label>
         <input id="rc" inputMode="tel" placeholder="77 123 45 67" value={form.confirmPhone} onChange={set("confirmPhone")}
-          onPaste={(e) => e.preventDefault()} />
-        {form.confirmPhone && phoneOk && !phonesMatch && <div className="field-err">Les deux numéros ne correspondent pas.</div>}
+          onPaste={(e) => e.preventDefault()} aria-invalid={form.confirmPhone !== "" && phoneOk && !phonesMatch} />
+        {form.confirmPhone && phoneOk && !phonesMatch && <p className="error-text">Les deux numéros sont différents.</p>}
+      </div>
 
-        <div className="grid2">
-          <div>
-            <label htmlFor="sn">Votre nom</label>
-            <input id="sn" autoComplete="name" placeholder="ex. Moussa Dione" value={form.senderName} onChange={set("senderName")} />
-          </div>
-          <div>
-            <label htmlFor="sc">Votre pays</label>
-            <select id="sc" value={form.senderCountry} onChange={set("senderCountry")}>
-              {COUNTRIES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
-            </select>
-          </div>
+      <p className="group-title">Vous</p>
+      <div className="pair">
+        <div className="field">
+          <label htmlFor="sn">Votre nom</label>
+          <input id="sn" autoComplete="name" placeholder="Moussa Dione" value={form.senderName} onChange={set("senderName")} />
         </div>
+        <div className="field">
+          <label htmlFor="sc">Votre pays</label>
+          <select id="sc" value={form.senderCountry} onChange={set("senderCountry")}>
+            {COUNTRIES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+          </select>
+        </div>
+      </div>
+      {error && <div className="alert err">{error}</div>}
 
-        {error && <div className="alert err">{error}</div>}
-        <button className="btn" disabled={!valid || busy} onClick={showRecap}>{busy ? "Calcul…" : "Voir le récapitulatif"}</button>
-        <button className="link" onClick={() => router.push("/")}>Changer le montant</button>
-      </section>
-    </>
+      <div className="actions">
+        <button className="btn" disabled={!valid || busy} onClick={showRecap}>{busy ? "Calcul du taux…" : "Vérifier l'envoi"}</button>
+        <button className="text-btn" onClick={() => router.push("/")}>Changer le montant</button>
+      </div>
+    </div>
   );
 }
 

@@ -3,7 +3,7 @@
 import { Suspense, use, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import QRCode from "qrcode";
-import { btc, fcfa, NETWORKS, sats } from "../../ui";
+import { btc, fcfa, NETWORKS, num } from "../../ui";
 
 type Status =
   | "CREATED" | "AWAITING_PAYMENT" | "PAYMENT_DETECTED" | "UNDERPAID" | "PAYOUT_PENDING"
@@ -18,6 +18,7 @@ type Transfer = {
 
 const FAILED: Status[] = ["PAYOUT_FAILED", "EXPIRED", "CANCELLED", "REFUND_PENDING", "UNDERPAID"];
 const TERMINAL: Status[] = ["PAYOUT_SUCCESS", ...FAILED];
+const nf = { format: num };
 
 // Avancement : 0 = attente paiement, 1 = payé, 2 = envoi mobile money, 3 = reçu
 function progress(s: Status): number {
@@ -28,11 +29,11 @@ function progress(s: Status): number {
 }
 
 const FAIL_TEXT: Partial<Record<Status, string>> = {
-  EXPIRED: "La facture a expiré avant le paiement. Aucun fonds n'a été débité.",
-  CANCELLED: "Le transfert a été annulé. Aucun fonds n'a été débité.",
-  PAYOUT_FAILED: "Paiement reçu, mais l'envoi mobile money a échoué. Nous relançons automatiquement.",
-  REFUND_PENDING: "L'envoi n'a pas pu aboutir. Un remboursement est en cours.",
-  UNDERPAID: "Montant reçu insuffisant. Le transfert est en revue.",
+  EXPIRED: "La facture a expiré avant le paiement. Aucun bitcoin n'a été débité.",
+  CANCELLED: "L'envoi a été annulé. Aucun bitcoin n'a été débité.",
+  PAYOUT_FAILED: "Paiement reçu, mais l'envoi mobile money a échoué. Une nouvelle tentative est en cours.",
+  REFUND_PENDING: "L'envoi n'a pas pu aboutir. Votre remboursement est en préparation.",
+  UNDERPAID: "Le montant reçu est insuffisant. L'envoi est en vérification.",
 };
 
 function useCountdown(until: string | null) {
@@ -53,6 +54,7 @@ function PayView({ id }: { id: string }) {
   const [copied, setCopied] = useState(false);
   const [simulating, setSimulating] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const left = useCountdown(t?.status === "AWAITING_PAYMENT" ? t.expiresAt : null);
 
   async function simulate() {
     setSimulating(true);
@@ -61,19 +63,18 @@ function PayView({ id }: { id: string }) {
       if (!res.ok) setError((await res.json().catch(() => ({}))).error ?? `Erreur ${res.status}`);
     } finally {
       setSimulating(false);
-      setRefreshKey((k) => k + 1); // relance le polling
+      setRefreshKey((k) => k + 1); // relance le suivi
     }
   }
-  const left = useCountdown(t?.status === "AWAITING_PAYMENT" ? t.expiresAt : null);
 
-  // Polling du statut (le webhook Bitnob met la base à jour côté serveur)
+  // Suivi du statut (le webhook Bitnob met la base à jour côté serveur)
   useEffect(() => {
     let stop = false;
     let timer: ReturnType<typeof setTimeout>;
     async function tick() {
       try {
         const res = await fetch(`/api/transfers/${id}?token=${encodeURIComponent(token)}`, { cache: "no-store" });
-        if (!res.ok) throw new Error(res.status === 404 ? "Transfert introuvable." : `Erreur ${res.status}`);
+        if (!res.ok) throw new Error(res.status === 404 ? "Cet envoi est introuvable. Vérifiez le lien." : `Erreur ${res.status}`);
         const data = (await res.json()) as Transfer;
         if (stop) return;
         setT(data);
@@ -90,87 +91,86 @@ function PayView({ id }: { id: string }) {
 
   useEffect(() => {
     if (t?.paymentRequest) {
-      QRCode.toDataURL(`lightning:${t.paymentRequest}`.toUpperCase(), { width: 560, margin: 1 }).then(setQr);
+      QRCode.toDataURL(`lightning:${t.paymentRequest}`.toUpperCase(), { width: 600, margin: 0, color: { dark: "#14213d" } }).then(setQr);
     }
   }, [t?.paymentRequest]);
 
-  if (error && !t) return <section className="card"><h1>Oups</h1><div className="alert err">{error}</div></section>;
-  if (!t) return <section className="card"><p className="sub">Chargement…</p></section>;
+  if (error && !t) return <div className="screen"><h1>Envoi introuvable</h1><div className="alert err">{error}</div></div>;
+  if (!t) return <div className="screen"><p className="lede">Chargement de l&apos;envoi…</p></div>;
 
   const network = NETWORKS.find((n) => n.value === t.recipientNetwork)?.label ?? t.recipientNetwork;
   const p = progress(t.status);
   const failed = FAILED.includes(t.status);
-  const steps = [
-    "Paiement Lightning reçu",
-    `Envoi vers ${network} Money`,
-    `${fcfa(t.amountFcfa)} reçus par ${t.recipientName}`,
-  ];
 
   if (t.status === "PAYOUT_SUCCESS") {
     return (
-      <>
-        <div className="steps"><span className="on" /><span className="on" /><span className="on" /></div>
-        <section className="card success">
-          <div className="check">✓</div>
-          <div className="big">{fcfa(t.amountFcfa)}</div>
-          <p className="sub">envoyés à {t.recipientName} · {network} {t.recipientPhone}</p>
-          {t.simulated && (
-            <div className="alert warn">
-              Simulation sandbox : paiement Lightning simulé, payout accepté par Bitnob sandbox. Aucun argent n&apos;a bougé.
-            </div>
-          )}
-          <a className="btn" href="/">Nouvel envoi</a>
-        </section>
-      </>
+      <div className="screen done-screen">
+        <div className="seal" aria-hidden />
+        <p className="sent">{nf.format(t.amountFcfa)}<br />FCFA</p>
+        <p className="lede">envoyés à {t.recipientName}, {network} {t.recipientPhone}.</p>
+        {t.simulated && (
+          <div className="alert warn">
+            Simulation sandbox : le paiement bitcoin a été simulé et Bitnob sandbox a accepté l&apos;envoi. Aucun argent n&apos;a bougé.
+          </div>
+        )}
+        <div className="actions"><a className="btn" href="/">Faire un nouvel envoi</a></div>
+      </div>
     );
   }
 
-  return (
-    <>
-      <div className="steps"><span className="on" /><span className="on" /><span className="on" /></div>
+  const steps = [
+    "Paiement bitcoin reçu",
+    `Envoi sur ${network}`,
+    `${t.recipientName} reçoit ${fcfa(t.amountFcfa)}`,
+  ];
 
-      {t.status === "AWAITING_PAYMENT" && t.paymentRequest && (
-        <section className="card">
-          <h1>Payez {sats(t.totalSats)}</h1>
-          <p className="sub">Scannez avec votre portefeuille Lightning · {btc(t.totalSats)}</p>
-          <div className="qr">{qr ? <img src={qr} alt="QR code de la facture Lightning" /> : <p className="sub">QR…</p>}</div>
+  return (
+    <div className="screen">
+      <div className="progress" aria-label="Étape 3 sur 3"><span className="on" /><span className="on" /><span className="on" /></div>
+
+      {t.status === "AWAITING_PAYMENT" && t.paymentRequest ? (
+        <>
+          <h1>Scannez pour payer</h1>
+          <p className="pay-amount">{nf.format(t.totalSats)}<small>sats</small></p>
+          <p className="note">{btc(t.totalSats)} avec un portefeuille Lightning</p>
+          <div className="qr">{qr ? <img src={qr} alt="QR code de la facture Lightning" /> : <p className="note">Préparation du QR code…</p>}</div>
           {left !== null && (
-            <div className={`countdown${left < 60 ? " low" : ""}`}>
-              {left > 0 ? `Expire dans ${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}` : "Facture expirée"}
-            </div>
+            <p className={`timer${left < 60 ? " low" : ""}`}>
+              {left > 0 ? `Valable encore ${Math.floor(left / 60)} min ${String(left % 60).padStart(2, "0")}` : "Facture expirée"}
+            </p>
           )}
-          <a className="btn dark" href={`lightning:${t.paymentRequest}`}>Ouvrir dans mon portefeuille</a>
-          <button className="btn ghost" onClick={async () => {
-            await navigator.clipboard.writeText(t.paymentRequest!);
-            setCopied(true); setTimeout(() => setCopied(false), 1500);
-          }}>{copied ? "Copié ✓" : "Copier la facture"}</button>
-          <div className="invoice">{t.paymentRequest}</div>
-          {t.canSimulate && (
-            <button className="btn sim" disabled={simulating} onClick={simulate}>
-              {simulating ? "Simulation en cours…" : "Simuler le paiement (sandbox)"}
-            </button>
-          )}
-        </section>
+          <div className="actions inline">
+            <a className="btn" href={`lightning:${t.paymentRequest}`}>Ouvrir mon portefeuille</a>
+            <button className="btn secondary" onClick={async () => {
+              await navigator.clipboard.writeText(t.paymentRequest!);
+              setCopied(true); setTimeout(() => setCopied(false), 1500);
+            }}>{copied ? "Facture copiée" : "Copier la facture"}</button>
+            {t.canSimulate && (
+              <button className="btn sim" disabled={simulating} onClick={simulate}>
+                {simulating ? "Simulation…" : "Simuler le paiement (sandbox)"}
+              </button>
+            )}
+          </div>
+          <p className="invoice">{t.paymentRequest}</p>
+        </>
+      ) : (
+        <>
+          <h1>{failed ? "Envoi interrompu" : "Envoi en cours"}</h1>
+          <p className="lede">{fcfa(t.amountFcfa)} pour {t.recipientName}</p>
+        </>
       )}
 
-      <section className="card">
-        <ul className="timeline" aria-live="polite">
-          {steps.map((label, i) => {
-            const cls = i < p ? "done" : i === p && !failed && t.status !== "AWAITING_PAYMENT" ? "now" : i === p && failed ? "fail" : "";
-            return (
-              <li key={label} className={cls}>
-                <span className="dot">{i < p ? "✓" : cls === "fail" ? "!" : ""}</span>
-                <span>{label}</span>
-              </li>
-            );
-          })}
-        </ul>
-        {t.status === "AWAITING_PAYMENT" && <p className="hint">En attente du paiement… cette page se met à jour toute seule.</p>}
-        {failed && <div className="alert err">{FAIL_TEXT[t.status]}</div>}
-        {failed && <a className="btn ghost" href="/">Recommencer</a>}
-        {error && <div className="alert err">{error}</div>}
-      </section>
-    </>
+      <ol className="track" aria-live="polite">
+        {steps.map((label, i) => {
+          const cls = i < p ? "done" : i === p && failed ? "fail" : i === p && t.status !== "AWAITING_PAYMENT" ? "now" : "";
+          return <li key={label} className={cls}><span className="mark" aria-hidden />{label}</li>;
+        })}
+      </ol>
+      {failed && <div className="alert err">{FAIL_TEXT[t.status]}</div>}
+      {error && t && <div className="alert err">{error}</div>}
+
+      {failed && <div className="actions"><a className="btn secondary" href="/">Recommencer</a></div>}
+    </div>
   );
 }
 

@@ -10,16 +10,21 @@ export type Quote = {
   quoteExpiresAt: string;
 };
 
-const nf = new Intl.NumberFormat("fr-FR");
-export const fcfa = (n: number) => `${nf.format(n)} FCFA`;
-export const sats = (n: number) => `${nf.format(n)} sats`;
-export const btc = (satsAmount: number) => `${(satsAmount / 1e8).toFixed(8)} BTC`;
+const nfFr = new Intl.NumberFormat("fr-FR");
+// fr-FR sépare les milliers par une espace fine (U+202F), quasi invisible en grande taille
+export const num = (n: number) => nfFr.format(n).replace(/ /g, " ");
+const nf = { format: num };
+// Espaces insécables : le nombre ne se sépare jamais de son unité
+export const fcfa = (n: number) => `${nf.format(n)} FCFA`;
+export const sats = (n: number) => `${nf.format(n)} sats`;
+export const btc = (satsAmount: number) => `${(satsAmount / 1e8).toFixed(8)} BTC`;
 
+// Pastille à la couleur de chaque opérateur : repère visuel, pas décoration
 export const NETWORKS = [
-  { value: "orange", label: "Orange" },
-  { value: "wave", label: "Wave" },
-  { value: "free", label: "Free" },
-  { value: "expresso", label: "Expresso" },
+  { value: "orange", label: "Orange Money", color: "#ff7900" },
+  { value: "wave", label: "Wave", color: "#1dc4ff" },
+  { value: "free", label: "Free", color: "#cd1e25" },
+  { value: "expresso", label: "Expresso", color: "#475467" },
 ] as const;
 
 export const COUNTRIES = [

@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { fcfa, MAX_FCFA, MIN_FCFA, postJson, sats, type Quote } from "./ui";
+import { fcfa, MAX_FCFA, MIN_FCFA, num, postJson, sats, type Quote } from "./ui";
 
-// Écran 1 : montant en FCFA → devis Bitnob (debounce) → BTC à payer
+// Écran 1 : montant en FCFA → devis Bitnob (debounce) → bitcoin à payer
 export default function AmountPage() {
   const router = useRouter();
   const [raw, setRaw] = useState("5000");
@@ -31,43 +31,43 @@ export default function AmountPage() {
       } finally {
         if (id === seq.current) setLoading(false);
       }
-    }, 600);
+    }, 500);
     return () => clearTimeout(t);
   }, [amount, inRange]);
 
+  const pending = loading ? "…" : "—";
+
   return (
-    <>
-      <div className="steps"><span className="on" /><span /><span /></div>
-      <section className="card">
-        <h1>Combien voulez-vous envoyer ?</h1>
-        <p className="sub">Le bénéficiaire reçoit exactement ce montant sur son mobile money.</p>
+    <div className="screen">
+      <div className="progress" aria-label="Étape 1 sur 3"><span className="on" /><span /><span /></div>
+      <h1>Combien envoyer{" "}?</h1>
+      <p className="lede">Le bénéficiaire reçoit exactement ce montant sur son mobile money.</p>
 
-        <div className="amount-input">
-          <input
-            inputMode="numeric"
-            aria-label="Montant en FCFA"
-            value={raw ? new Intl.NumberFormat("fr-FR").format(amount) : ""}
-            onChange={(e) => setRaw(e.target.value.replace(/\D/g, "").slice(0, 7))}
-          />
-          <span className="suffix">FCFA</span>
-        </div>
-        {!inRange && raw !== "" && (
-          <div className="field-err">Entre {fcfa(MIN_FCFA)} et {fcfa(MAX_FCFA)}.</div>
-        )}
+      <div className="amount">
+        <input
+          inputMode="numeric"
+          aria-label="Montant en FCFA"
+          aria-invalid={!inRange && raw !== ""}
+          value={raw ? num(amount) : ""}
+          placeholder="0"
+          onChange={(e) => setRaw(e.target.value.replace(/\D/g, "").slice(0, 7))}
+        />
+        <span className="unit">FCFA</span>
+      </div>
+      {!inRange && raw !== "" && <p className="error-text">Choisissez un montant entre {fcfa(MIN_FCFA)} et {fcfa(MAX_FCFA)}.</p>}
 
-        <div className="quote" aria-live="polite">
-          <div className="row"><span className="k">Le bénéficiaire reçoit</span><span className="v">{inRange ? fcfa(amount) : "—"}</span></div>
-          <div className="row"><span className="k">Frais de service</span><span className="v">{quote ? fcfa(quote.feeFcfa) : loading ? "…" : "—"}</span></div>
-          <div className="row total"><span className="k">Vous payez</span><span className="v sats">{quote ? sats(quote.totalSats) : loading ? "Calcul…" : "—"}</span></div>
-          {quote && <p className="hint">1 BTC ≈ {fcfa(quote.rateBtcXof)} · taux Bitnob, recalculé à la validation</p>}
-        </div>
+      <div className="receipt" aria-live="polite">
+        <div className="line"><span className="k">Frais</span><span className="v">{quote ? fcfa(quote.feeFcfa) : pending}</span></div>
+        <div className="line total"><span className="k">À payer en bitcoin</span><span className="v sats">{quote ? sats(quote.totalSats) : pending}</span></div>
+      </div>
+      {quote && <p className="note">1 BTC ≈ {fcfa(quote.rateBtcXof)}. Le taux est confirmé juste avant le paiement.</p>}
+      {error && <div className="alert err">{error}</div>}
 
-        {error && <div className="alert err">{error}</div>}
-
+      <div className="actions">
         <button className="btn" disabled={!quote} onClick={() => router.push(`/recipient?amount=${amount}`)}>
           Continuer
         </button>
-      </section>
-    </>
+      </div>
+    </div>
   );
 }
