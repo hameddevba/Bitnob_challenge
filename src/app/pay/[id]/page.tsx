@@ -113,7 +113,10 @@ function PayView({ id }: { id: string }) {
             Simulation sandbox : le paiement bitcoin a été simulé et Bitnob sandbox a accepté l&apos;envoi. Aucun argent n&apos;a bougé.
           </div>
         )}
-        <div className="actions"><a className="btn" href="/">Faire un nouvel envoi</a></div>
+        <div className="actions">
+          <a className="btn" href={`/recu/${t.id}?token=${encodeURIComponent(token)}`}>Voir le reçu</a>
+          <a className="btn secondary" href="/">Faire un nouvel envoi</a>
+        </div>
       </div>
     );
   }

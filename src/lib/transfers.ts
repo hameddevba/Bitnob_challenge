@@ -3,9 +3,11 @@ import type { PoolClient } from "pg";
 import { pool, withTx } from "./db";
 import {
   createInvoice, createPayoutQuote, finalizePayout, getInvoice, getPayout, initializePayout,
-  type SnNetwork,
+  type Payout, type SnNetwork,
 } from "./bitnob";
-import { payoutCostSats, priceFromQuote } from "./pricing";
+import {
+  netSatsFromTotal, payoutCostSats, priceFromQuote, priceFromSatsQuote, satsToBtcString, type Pricing,
+} from "./pricing";
 import type { CreateTransferInput } from "./validators";
 
 const FEE_PERCENT = () => Number(process.env.SERVICE_FEE_PERCENT ?? 1.5);
@@ -29,29 +31,81 @@ export function invoiceExpirySeconds(quoteExpiresAt: string, now = Date.now()): 
 
 // ---------- 1. Création (validation du récapitulatif) ----------
 
+export type RecipientRow = {
+  id: string; handle: string; recipient_name: string; recipient_phone: string;
+  recipient_network: SnNetwork; recipient_country: string;
+};
+
+type NewTransfer = {
+  price: Pricing;
+  quote: Payout;
+  recipient: { name: string; phone: string; network: string; country: string };
+  sender: { name: string; country: string };
+  refundAddress?: string | null;
+  recipientId?: string | null;
+  origin: "app" | "link" | "lightning_address";
+  description: string;
+};
+
+// Saisie classique dans l'application
 export async function createTransfer(input: CreateTransferInput) {
   const quote = await createPayoutQuote({
     settlementAmountFcfa: input.amountFcfa, reference: `q-${randomUUID()}`,
   });
   const price = priceFromQuote(quote, input.amountFcfa, FEE_PERCENT());
+  return insertWithInvoice({
+    price, quote, origin: "app",
+    recipient: { name: input.recipientName, phone: input.recipientPhone, network: input.recipientNetwork, country: "SN" },
+    sender: { name: input.senderName, country: input.senderCountry },
+    refundAddress: input.refundAddress,
+    description: `Envoi ${price.amountFcfa} FCFA à ${input.recipientName}`,
+  });
+}
 
+// Lien de paiement permanent : le bénéficiaire vient de la base, jamais du client
+export async function createLinkTransfer(r: RecipientRow, p: { amountFcfa: number; senderName: string; senderCountry: string }) {
+  const quote = await createPayoutQuote({ settlementAmountFcfa: p.amountFcfa, reference: `q-${randomUUID()}` });
+  const price = priceFromQuote(quote, p.amountFcfa, FEE_PERCENT());
+  return insertWithInvoice({
+    price, quote, origin: "link", recipientId: r.id,
+    recipient: { name: r.recipient_name, phone: r.recipient_phone, network: r.recipient_network, country: r.recipient_country },
+    sender: { name: p.senderName, country: p.senderCountry },
+    description: `Envoi ${price.amountFcfa} FCFA à ${r.recipient_name}`,
+  });
+}
+
+// Adresse Lightning : l'expéditeur fixe le total en sats depuis son portefeuille
+export async function createLightningAddressTransfer(r: RecipientRow, totalSats: number, senderName: string) {
+  const net = netSatsFromTotal(totalSats, FEE_PERCENT());
+  const quote = await createPayoutQuote({ amountBtc: satsToBtcString(net), reference: `q-${randomUUID()}` });
+  const price = priceFromSatsQuote(quote, totalSats);
+  return insertWithInvoice({
+    price, quote, origin: "lightning_address", recipientId: r.id,
+    recipient: { name: r.recipient_name, phone: r.recipient_phone, network: r.recipient_network, country: r.recipient_country },
+    sender: { name: senderName, country: r.recipient_country },
+    description: `Envoi vers ${r.handle} (${r.recipient_network})`,
+  });
+}
+
+async function insertWithInvoice(t: NewTransfer) {
+  const { price, quote } = t;
   const { rows } = await pool.query(
     `INSERT INTO transfers
       (amount_fcfa, fee_fcfa, amount_btc_sats, payout_cost_sats, rate_btc_xof, rate_expires_at,
-       recipient_name, recipient_phone, recipient_network, sender_name, sender_country,
-       refund_address, bitnob_quote_id, status)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'CREATED')
+       recipient_name, recipient_phone, recipient_network, recipient_country, sender_name, sender_country,
+       refund_address, bitnob_quote_id, recipient_id, origin, status)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'CREATED')
      RETURNING id, access_token`,
     [price.amountFcfa, price.feeFcfa, price.totalSats, price.payoutCostSats, price.rateBtcXof,
-     price.quoteExpiresAt, input.recipientName, input.recipientPhone, input.recipientNetwork,
-     input.senderName, input.senderCountry, input.refundAddress || null, quote.quote_id]);
+     price.quoteExpiresAt, t.recipient.name, t.recipient.phone, t.recipient.network, t.recipient.country,
+     t.sender.name, t.sender.country, t.refundAddress || null, quote.quote_id, t.recipientId ?? null, t.origin]);
   const { id, access_token } = rows[0] as { id: string; access_token: string };
   await logEvent(pool, id, "bitnob", "quote_created", quote);
 
   try {
     const invoice = await createInvoice({
       amountSats: price.totalSats,
-      description: `Envoi ${price.amountFcfa} FCFA vers ${input.recipientNetwork} Money`,
+      description: t.description,
       reference: id, // idempotent : un transfert = une facture
       expirySeconds: invoiceExpirySeconds(price.quoteExpiresAt),
     });

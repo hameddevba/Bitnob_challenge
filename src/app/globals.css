@@ -105,6 +105,33 @@ h1 { font-family: var(--display); font-weight: 700; font-size: 28px; line-height
 .btn + .btn { margin-top: 10px; }
 .text-btn { display: block; margin: 14px auto 0; background: none; border: 0; padding: 4px; color: var(--muted); font-size: 14px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 
+.aside-link { display: block; margin-top: 28px; font-size: 14px; color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---------- lien de paiement ---------- */
+.payee { display: flex; align-items: center; gap: 12px; padding: 14px 0 18px; border-bottom: 1px solid var(--line); margin-bottom: 22px; }
+.payee .avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--field); display: grid; place-items: center; font-family: var(--display); font-weight: 800; font-size: 18px; flex: none; position: relative; }
+.payee .avatar .dot { position: absolute; right: -1px; bottom: -1px; border: 2px solid var(--paper); width: 14px; height: 14px; }
+.payee .who { font-weight: 700; }
+.payee .where { color: var(--muted); font-size: 14px; }
+.inline-copy { background: none; border: 0; padding: 0; color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; font-size: inherit; }
+.share { margin-top: 6px; }
+.share .value { font-family: var(--display); font-weight: 700; font-size: 20px; letter-spacing: -0.02em; word-break: break-all; margin: 2px 0 10px; }
+.share .label { font-size: 14px; color: var(--muted); }
+.share + .share { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+.row-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.row-btns .btn { padding: 12px; font-size: 15px; margin: 0; }
+.prefix { display: flex; align-items: center; background: var(--field); border-radius: 12px; border: 1.5px solid transparent; }
+.prefix:focus-within { background: var(--paper); border-color: var(--ink); }
+.prefix span { padding-left: 15px; color: var(--muted); white-space: nowrap; font-size: 15px; }
+.field .prefix input { background: transparent; border: 0; padding-left: 2px; }
+
+/* ---------- reçu ---------- */
+.mono { font-family: ui-monospace, Consolas, monospace; font-weight: 500; font-size: 13px; }
+.proof .hash { margin: 14px 0; }
+.proof .hash span { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+.proof .hash code { display: block; font-size: 12px; word-break: break-all; background: var(--field); padding: 10px 12px; border-radius: 10px; line-height: 1.5; }
+.alert.ok { background: var(--ok-bg); color: var(--accent); }
+
 .alert { border-radius: 12px; padding: 13px 15px; font-size: 14px; margin-top: 18px; }
 .alert.err { background: var(--err-bg); color: var(--err); }
 .alert.warn { background: var(--warn-bg); color: var(--warn); }

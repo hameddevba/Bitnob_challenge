@@ -29,3 +29,26 @@ export const createTransferSchema = z.object({
 });
 
 export type CreateTransferInput = z.infer<typeof createTransferSchema>;
+
+// Identifiant de lien : domaine/p/awa et awa@domaine
+const RESERVED = new Set(["api", "admin", "app", "pay", "recu", "creer", "recipient", "support", "www", "root", "lnurl", "well-known"]);
+export const handleSchema = z.string().trim().toLowerCase()
+  .regex(/^[a-z0-9][a-z0-9._-]{2,29}$/, "3 à 30 caractères : lettres, chiffres, point, tiret")
+  .refine((h) => !RESERVED.has(h), "Cet identifiant est réservé");
+
+const phoneSchema = z.string().trim().refine((v) => {
+  try { normalizeSnPhone(v); return true; } catch { return false; }
+}, "Numéro sénégalais invalide (ex. 77 123 45 67)").transform(normalizeSnPhone);
+
+export const createRecipientSchema = z.object({
+  handle: handleSchema,
+  recipientName: z.string().trim().min(2).max(100),
+  recipientPhone: phoneSchema,
+  recipientNetwork: z.enum(SN_NETWORKS).default("orange"),
+});
+
+export const linkTransferSchema = z.object({
+  amountFcfa: amount,
+  senderName: z.string().trim().min(2).max(100),
+  senderCountry: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/, "Code pays ISO à 2 lettres"),
+});

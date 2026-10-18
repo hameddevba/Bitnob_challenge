@@ -1,40 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { fcfa, MAX_FCFA, MIN_FCFA, num, postJson, sats, type Quote } from "./ui";
+import { fcfa, MAX_FCFA, MIN_FCFA, num, sats } from "./ui";
+import { useQuote } from "./useQuote";
 
-// Écran 1 : montant en FCFA → devis Bitnob (debounce) → bitcoin à payer
+// Écran 1 : montant en FCFA → devis Bitnob → bitcoin à payer
 export default function AmountPage() {
   const router = useRouter();
   const [raw, setRaw] = useState("5000");
-  const [quote, setQuote] = useState<Quote | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const seq = useRef(0);
-
   const amount = Number(raw.replace(/\D/g, ""));
-  const inRange = amount >= MIN_FCFA && amount <= MAX_FCFA;
-
-  useEffect(() => {
-    setQuote(null);
-    setError(null);
-    if (!inRange) return;
-    const id = ++seq.current;
-    setLoading(true);
-    const t = setTimeout(async () => {
-      try {
-        const q = await postJson<Quote>("/api/quote", { amountFcfa: amount });
-        if (id === seq.current) setQuote(q);
-      } catch (e) {
-        if (id === seq.current) setError((e as Error).message);
-      } finally {
-        if (id === seq.current) setLoading(false);
-      }
-    }, 500);
-    return () => clearTimeout(t);
-  }, [amount, inRange]);
-
+  const { quote, loading, error, inRange } = useQuote(amount);
   const pending = loading ? "…" : "—";
 
   return (
@@ -62,6 +38,8 @@ export default function AmountPage() {
       </div>
       {quote && <p className="note">1 BTC ≈ {fcfa(quote.rateBtcXof)}. Le taux est confirmé juste avant le paiement.</p>}
       {error && <div className="alert err">{error}</div>}
+
+      <a className="aside-link" href="/creer">Vous recevez de l&apos;argent{" "}? Créez votre lien de paiement</a>
 
       <div className="actions">
         <button className="btn" disabled={!quote} onClick={() => router.push(`/recipient?amount=${amount}`)}>

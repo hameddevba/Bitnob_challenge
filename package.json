@@ -12,6 +12,7 @@
     "check:bitnob": "tsx scripts/check-bitnob.ts"
   },
   "dependencies": {
+    "light-bolt11-decoder": "^3.2.0",
     "next": "16.4.2",
     "pg": "8.23.1",
     "qrcode": "1.5.4",

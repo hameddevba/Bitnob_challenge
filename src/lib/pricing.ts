@@ -19,6 +19,18 @@ export function payoutCostSats(q: Pick<Payout, "amount" | "fees" | "total_amount
   return amount + btcStringToSats(q.fees || "0");
 }
 
+export function satsToBtcString(sats: number): string {
+  if (!Number.isInteger(sats) || sats < 0) throw new Error(`Montant en sats invalide : ${sats}`);
+  const s = String(sats).padStart(9, "0");
+  return `${s.slice(0, -8)}.${s.slice(-8)}`;
+}
+
+// Part nette envoyée au payout quand l'expéditeur fixe le total en sats (adresse Lightning) :
+// total = net + frais, frais = net × feePercent %.
+export function netSatsFromTotal(totalSats: number, feePercent: number): number {
+  return Math.floor((totalSats * 100) / (100 + feePercent));
+}
+
 export type Pricing = {
   amountFcfa: number;     // garanti au bénéficiaire
   payoutCostSats: number; // ce que Bitnob débite pour le payout
@@ -28,6 +40,25 @@ export type Pricing = {
   rateBtcXof: number;     // XOF pour 1 BTC
   quoteExpiresAt: string;
 };
+
+// Total imposé par l'expéditeur : le bénéficiaire reçoit ce que donne la cotation sur la part nette.
+export function priceFromSatsQuote(q: Payout, totalSats: number): Pricing {
+  const cost = payoutCostSats(q);
+  const amountFcfa = Math.floor(Number(q.settlement_amount));
+  if (!(cost > 0) || !(amountFcfa > 0)) throw new Error("Cotation sans montant");
+  if (cost > totalSats) throw new Error("Cotation plus chère que le montant reçu");
+  const feeSats = totalSats - cost;
+  const rateBtcXof = Math.round((amountFcfa * 100_000_000) / cost);
+  return {
+    amountFcfa,
+    payoutCostSats: cost,
+    feeSats,
+    totalSats,
+    feeFcfa: Math.ceil((feeSats * rateBtcXof) / 100_000_000),
+    rateBtcXof,
+    quoteExpiresAt: q.expires_at,
+  };
+}
 
 export function priceFromQuote(q: Payout, amountFcfa: number, feePercent: number): Pricing {
   if (Number(q.settlement_amount) !== amountFcfa) {

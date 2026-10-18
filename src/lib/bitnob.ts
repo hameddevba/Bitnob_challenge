@@ -109,15 +109,21 @@ export const SN_NETWORKS = ["orange", "free", "expresso", "wave"] as const;
 export type SnNetwork = (typeof SN_NETWORKS)[number];
 export const SN_PHONE_PATTERN = /^(\+?221[7]\d{8}|[7]\d{8})$/;
 
+// Cotation par montant FCFA visé (settlement_amount) ou par montant BTC envoyé (amount).
 export async function createPayoutQuote(p: {
-  settlementAmountFcfa: number; reference: string; country?: string;
+  settlementAmountFcfa?: number; amountBtc?: string; reference: string; country?: string;
 }) {
+  if ((p.settlementAmountFcfa === undefined) === (p.amountBtc === undefined)) {
+    throw new Error("Cotation : fournir soit settlementAmountFcfa, soit amountBtc");
+  }
   const data = await bitnob<{ payout: Payout }>("POST", "/api/payouts/quotes", {
     from_asset: "BTC",
     to_currency: "XOF",
     source: "offchain",
     country: p.country ?? "SN",
-    settlement_amount: String(p.settlementAmountFcfa),
+    ...(p.amountBtc !== undefined
+      ? { amount: p.amountBtc }
+      : { settlement_amount: String(p.settlementAmountFcfa) }),
     payment_reason: "family_support",
     reference: p.reference,
   });
