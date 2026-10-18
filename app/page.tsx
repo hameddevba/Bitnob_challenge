@@ -328,7 +328,7 @@ const invoiceValue = /^(lnbc|lntb|lnbcrt)/i.test(paymentRequest)
               <p className={styles.step}>ÉTAPE 02</p>
               <h2>Résultat de la demande</h2>
             </div>
-            <span className={styles.icon}>⌁</span>
+            <span className={styles.icon}>ϟ</span>
           </div>
 
           {!result && !loading && (

@@ -95,8 +95,12 @@
   padding: 28px;
   border: 1px solid #e7eaf1;
   border-radius: 18px;
+  height: 92%;
   background: #fff;
   box-shadow: 0 8px 30px rgba(24, 35, 66, 0.035);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .panelHeading {
@@ -120,6 +124,7 @@
 .icon {
   display: grid;
   place-items: center;
+  margin-left: 10px;
   width: 42px;
   height: 42px;
   border-radius: 12px;
@@ -142,7 +147,8 @@
 
 .form input,
 .form select {
-  width: 100%;
+  width: 450px;
+  height: 50px;
   min-width: 0;
   box-sizing: border-box;
   padding: 14px;
@@ -163,8 +169,9 @@
 
 .amountField {
   display: flex;
+  width: 450px;
+  height: 50px;
   align-items: center;
-  padding-right: 14px;
   border: 1px solid #dce1eb;
   border-radius: 10px;
 }
@@ -176,6 +183,7 @@
 
 .amountField input {
   border: 0;
+  padding: 14px;
   box-shadow: none;
   font-size: 22px;
   font-weight: 700;
@@ -187,6 +195,7 @@
 
 .amountField span {
   color: #68738a;
+  margin-right: 20px;
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
@@ -205,7 +214,8 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  width: 100%;
+  width: 450px;
+  height: 50px;
   margin-top: 26px;
   padding: 15px 18px;
   border: 0;
@@ -536,9 +546,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 450px;
+  height: 50px;
   gap: 12px;
   margin: 8px 0 18px;
-  padding: 12px 14px;
+  padding: 4px;
   border: 1px solid rgba(233, 30, 99, 0.2);
   border-radius: 12px;
   background: rgba(233, 30, 99, 0.06);
@@ -547,10 +559,12 @@
 .conversion span {
   color: var(--muted);
   font-size: 0.85rem;
+  margin: 10px;
 }
 
 .conversion strong {
   color: #e91e63;
   font-size: 1rem;
   font-weight: 700;
+  margin: 10px;
 }
