@@ -105,6 +105,16 @@ h1 { font-family: var(--display); font-weight: 700; font-size: 28px; line-height
 .btn + .btn { margin-top: 10px; }
 .text-btn { display: block; margin: 14px auto 0; background: none; border: 0; padding: 4px; color: var(--muted); font-size: 14px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 
+/* ---------- accueil ---------- */
+.switch { display: grid; grid-template-columns: 1fr 1fr; background: var(--field); border-radius: 12px; padding: 4px; margin-bottom: 26px; }
+.switch button { border: 0; background: transparent; padding: 10px; border-radius: 9px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.switch button[aria-selected="true"] { background: var(--paper); color: var(--ink); box-shadow: 0 1px 2px rgba(20, 33, 61, 0.12); }
+.ways { list-style: none; margin: 4px 0 14px; padding: 0; }
+.ways li { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.ways li:last-child { border-bottom: 0; }
+.ways strong { display: block; font-family: var(--display); font-size: 17px; letter-spacing: -0.01em; margin-bottom: 3px; }
+.ways span { color: var(--muted); font-size: 15px; }
+
 .aside-link { display: block; margin-top: 28px; font-size: 14px; color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 
 /* ---------- lien de paiement ---------- */
