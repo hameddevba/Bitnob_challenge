@@ -43,7 +43,9 @@ type NewTransfer = {
   sender: { name: string; country: string };
   refundAddress?: string | null;
   recipientId?: string | null;
-  origin: "app" | "link" | "lightning_address";
+  potId?: string | null;
+  showSender?: boolean;
+  origin: "app" | "link" | "lightning_address" | "pot";
   description: string;
 };
 
@@ -62,15 +64,19 @@ export async function createTransfer(input: CreateTransferInput) {
   });
 }
 
-// Lien de paiement permanent : le bénéficiaire vient de la base, jamais du client
-export async function createLinkTransfer(r: RecipientRow, p: { amountFcfa: number; senderName: string; senderCountry: string }) {
+// Lien de paiement permanent (ou contribution à une cagnotte) : le bénéficiaire vient de la base, jamais du client
+export async function createLinkTransfer(r: RecipientRow, p: {
+  amountFcfa: number; senderName: string; senderCountry: string; refundAddress?: string;
+  pot?: { id: string; title: string }; showSender?: boolean;
+}) {
   const quote = await createPayoutQuote({ settlementAmountFcfa: p.amountFcfa, reference: `q-${randomUUID()}` });
   const price = priceFromQuote(quote, p.amountFcfa, FEE_PERCENT());
   return insertWithInvoice({
-    price, quote, origin: "link", recipientId: r.id,
+    price, quote, origin: p.pot ? "pot" : "link", recipientId: r.id, potId: p.pot?.id ?? null,
+    showSender: p.showSender ?? true, refundAddress: p.refundAddress,
     recipient: { name: r.recipient_name, phone: r.recipient_phone, network: r.recipient_network, country: r.recipient_country },
     sender: { name: p.senderName, country: p.senderCountry },
-    description: `Envoi ${price.amountFcfa} FCFA à ${r.recipient_name}`,
+    description: p.pot ? `Cagnotte « ${p.pot.title} »` : `Envoi ${price.amountFcfa} FCFA à ${r.recipient_name}`,
   });
 }
 
@@ -93,12 +99,13 @@ async function insertWithInvoice(t: NewTransfer) {
     `INSERT INTO transfers
       (amount_fcfa, fee_fcfa, amount_btc_sats, payout_cost_sats, rate_btc_xof, rate_expires_at,
        recipient_name, recipient_phone, recipient_network, recipient_country, sender_name, sender_country,
-       refund_address, bitnob_quote_id, recipient_id, origin, status)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'CREATED')
+       refund_address, bitnob_quote_id, recipient_id, origin, pot_id, show_sender, status)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'CREATED')
      RETURNING id, access_token`,
     [price.amountFcfa, price.feeFcfa, price.totalSats, price.payoutCostSats, price.rateBtcXof,
      price.quoteExpiresAt, t.recipient.name, t.recipient.phone, t.recipient.network, t.recipient.country,
-     t.sender.name, t.sender.country, t.refundAddress || null, quote.quote_id, t.recipientId ?? null, t.origin]);
+     t.sender.name, t.sender.country, t.refundAddress || null, quote.quote_id, t.recipientId ?? null, t.origin,
+     t.potId ?? null, t.showSender ?? true]);
   const { id, access_token } = rows[0] as { id: string; access_token: string };
   await logEvent(pool, id, "bitnob", "quote_created", quote);
 

@@ -16,6 +16,12 @@ export function maskPhone(phone: string): string {
 export const amountSchema = z.number().int().min(MIN_FCFA).max(MAX_FCFA);
 const amount = amountSchema;
 
+// Adresse Lightning de remboursement (nom@domaine), facultative
+export const lightningAddressSchema = z.string().trim().toLowerCase()
+  .regex(/^[a-z0-9._+-]{1,64}@([a-z0-9-]+\.)+[a-z]{2,}$/, "Adresse Lightning invalide (ex. moussa@blink.sv)");
+const refundAddress = z.union([lightningAddressSchema, z.literal("")]).optional()
+  .transform((v) => v || undefined);
+
 export const createTransferSchema = z.object({
   amountFcfa: amount,
   recipientName: z.string().trim().min(2).max(100),
@@ -25,7 +31,7 @@ export const createTransferSchema = z.object({
   recipientNetwork: z.enum(SN_NETWORKS).default("orange"),
   senderName: z.string().trim().min(2).max(100),
   senderCountry: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/, "Code pays ISO à 2 lettres"),
-  refundAddress: z.string().trim().max(200).optional(),
+  refundAddress,
 });
 
 export type CreateTransferInput = z.infer<typeof createTransferSchema>;
@@ -51,4 +57,14 @@ export const linkTransferSchema = z.object({
   amountFcfa: amount,
   senderName: z.string().trim().min(2).max(100),
   senderCountry: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/, "Code pays ISO à 2 lettres"),
+  refundAddress,
+});
+
+export const contributionSchema = linkTransferSchema.extend({
+  showSender: z.boolean().default(true),
+});
+
+export const createPotSchema = z.object({
+  title: z.string().trim().min(3, "3 caractères minimum").max(80),
+  goalFcfa: z.number().int().min(MIN_FCFA).max(50_000_000),
 });

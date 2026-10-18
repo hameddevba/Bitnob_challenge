@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { NETWORKS, postJson } from "../ui";
 
-type Created = { handle: string; name: string; network: string; link: string; lightningAddress: string };
+type Created = { handle: string; name: string; network: string; link: string; lightningAddress: string; manageLink: string };
 
 const SN_PHONE = /^(\+?221)?7\d{8}$/;
 const clean = (p: string) => p.replace(/[\s.\-()]/g, "");
@@ -80,7 +80,16 @@ export default function CreateLinkPage() {
           <button className="btn secondary" onClick={() => copy(created.lightningAddress, "ln")}>{copied === "ln" ? "Copiée" : "Copier l'adresse"}</button>
         </div>
 
-        <div className="actions"><a className="btn secondary" href={`/p/${created.handle}`}>Voir ma page</a></div>
+        <div className="share">
+          <div className="label">Votre lien de gestion (secret)</div>
+          <p className="note">Il ouvre votre historique et vos cagnottes. Gardez-le pour vous : il n&apos;est affiché qu&apos;une fois.</p>
+          <div className="row-btns" style={{ marginTop: 10 }}>
+            <button className="btn secondary" onClick={() => copy(created.manageLink, "manage")}>{copied === "manage" ? "Copié" : "Copier"}</button>
+            <a className="btn secondary" href={created.manageLink}>Ouvrir</a>
+          </div>
+        </div>
+
+        <div className="actions"><a className="btn" href={created.manageLink}>Aller à mon espace</a></div>
       </div>
     );
   }

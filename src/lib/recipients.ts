@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { pool } from "./db";
 import type { RecipientRow } from "./transfers";
 import { maskPhone } from "./validators";
@@ -23,6 +24,18 @@ export async function getRecipient(handle: string): Promise<RecipientRow | null>
   const { rows } = await pool.query(`SELECT * FROM recipients WHERE handle=$1`, [handle.toLowerCase()]);
   return rows[0] ?? null;
 }
+
+// Accès propriétaire (historique, cagnottes) : jeton secret donné une seule fois à la création
+export async function getRecipientForOwner(handle: string, token: string | null): Promise<RecipientRow | null> {
+  if (!token) return null;
+  const r = await getRecipient(handle);
+  if (!r) return null;
+  const a = Buffer.from((r as RecipientRow & { owner_token: string }).owner_token);
+  const b = Buffer.from(token);
+  return a.length === b.length && timingSafeEqual(a, b) ? r : null;
+}
+
+export const ownerToken = (r: RecipientRow) => (r as RecipientRow & { owner_token: string }).owner_token;
 
 // Ce que voit un expéditeur : jamais le numéro complet
 export function publicRecipient(r: RecipientRow) {

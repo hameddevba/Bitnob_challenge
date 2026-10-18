@@ -125,6 +125,48 @@ h1 { font-family: var(--display); font-weight: 700; font-size: 28px; line-height
 .prefix span { padding-left: 15px; color: var(--muted); white-space: nowrap; font-size: 15px; }
 .field .prefix input { background: transparent; border: 0; padding-left: 2px; }
 
+/* ---------- cagnotte ---------- */
+.pot-for { color: var(--muted); font-size: 14px; margin: 0 0 6px; }
+.pot-progress { margin: 18px 0 8px; }
+.pot-progress .raised { font-family: var(--display); font-weight: 800; font-size: clamp(44px, 14vw, 60px); letter-spacing: -0.045em; line-height: 1; margin: 0; font-variant-numeric: tabular-nums; }
+.pot-progress .raised small { font-size: 18px; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+.pot-progress .goal { margin: 6px 0 14px; color: var(--muted); font-size: 15px; }
+.bar { height: 10px; background: var(--field); border-radius: 999px; overflow: hidden; }
+.bar span { display: block; height: 100%; background: var(--accent); border-radius: 999px; transition: width 600ms ease; }
+.chips { display: flex; gap: 8px; margin: 14px 0 16px; }
+.chips button { flex: 1; padding: 10px 0; border-radius: 999px; border: 1.5px solid transparent; background: var(--field); font-weight: 600; cursor: pointer; font-variant-numeric: tabular-nums; }
+.chips button[aria-pressed="true"] { background: var(--paper); border-color: var(--ink); }
+.amount.compact input { font-size: clamp(40px, 12vw, 52px); }
+.check { display: flex; align-items: center; gap: 10px; margin-top: 16px; font-size: 15px; cursor: pointer; }
+.check input { width: 20px; height: 20px; accent-color: var(--accent); }
+.optional { font-weight: 400; color: var(--muted); }
+.contributors { list-style: none; margin: 12px 0 0; padding: 0; }
+.contributors li { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.contributors li:last-child { border-bottom: 0; }
+.contributors .who { font-weight: 600; }
+.contributors .amt { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.contributors .when { color: var(--muted); font-size: 13px; grid-column: 1 / -1; }
+@media (prefers-reduced-motion: reduce) { .bar span { transition: none; } }
+
+/* ---------- espace bénéficiaire ---------- */
+.pots { list-style: none; margin: 10px 0 0; padding: 0; }
+.pots li { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.pot-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+.pot-title { font-weight: 700; color: var(--ink); text-decoration: none; }
+.pot-head .inline-copy { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.new-pot { margin-top: 6px; padding: 4px 0 6px; }
+.history { list-style: none; margin: 8px 0 24px; padding: 0; }
+.history li { display: flex; justify-content: space-between; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--line); }
+.history li:last-child { border-bottom: 0; }
+.history .who { font-weight: 600; }
+.history .when { color: var(--muted); font-size: 13px; }
+.history .right { text-align: right; }
+.history .amt { font-weight: 700; font-variant-numeric: tabular-nums; }
+.tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; margin-top: 3px; }
+.tag.ok { background: var(--ok-bg); color: var(--accent); }
+.tag.wait { background: var(--field); color: var(--muted); }
+.tag.err { background: var(--err-bg); color: var(--err); }
+
 /* ---------- reçu ---------- */
 .mono { font-family: ui-monospace, Consolas, monospace; font-weight: 500; font-size: 13px; }
 .proof .hash { margin: 14px 0; }
