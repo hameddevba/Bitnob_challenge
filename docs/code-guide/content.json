@@ -1,0 +1,1312 @@
+{
+  "_comment": "Contenu rédigé à la main du guide du code. Fusionné par scripts/build-code-guide.ts. Les « refs » pointent vers l'index extrait du code (fn:, route:, page:, bitnob:, table:, col:, event:, webhook:, env:, test:, code:fichier#texte) et sont résolues en fichier:ligne à chaque génération ; une ref introuvable est signalée par le générateur.",
+  "synonyms": {
+    "invoice": [
+      "facture",
+      "bolt11",
+      "ln_invoice",
+      "ln_payment"
+    ],
+    "facture": [
+      "invoice",
+      "bolt11"
+    ],
+    "payout": [
+      "envoi mobile money",
+      "décaissement"
+    ],
+    "cagnotte": [
+      "pot",
+      "pots",
+      "contribution"
+    ],
+    "pot": [
+      "cagnotte"
+    ],
+    "preimage": [
+      "preuve",
+      "payment_hash"
+    ],
+    "preuve": [
+      "preimage",
+      "proof"
+    ],
+    "webhook": [
+      "webhook_receipts",
+      "x-bitnob-signature"
+    ],
+    "remboursement": [
+      "refund"
+    ],
+    "refund": [
+      "remboursement"
+    ],
+    "cotation": [
+      "quote"
+    ],
+    "quote": [
+      "cotation"
+    ],
+    "lien": [
+      "recipient",
+      "handle"
+    ],
+    "lnurl": [
+      "lightning address",
+      "adresse lightning",
+      "well-known",
+      "lud-16"
+    ],
+    "journal": [
+      "logEvent",
+      "transfer_events"
+    ],
+    "signature": [
+      "hmac"
+    ],
+    "frais": [
+      "fee"
+    ],
+    "verrou": [
+      "FOR UPDATE",
+      "SKIP LOCKED"
+    ],
+    "simulation": [
+      "simulate",
+      "sandbox"
+    ]
+  },
+  "annotations": {
+    "route:POST /api/webhooks/bitnob": {
+      "summary": "Reçoit les webhooks Bitnob. Vérifie la signature HMAC-SHA512, déduplique par event_id, puis relance confirmPayment (qui relit la facture Lightning par GET) ou syncPayout. Le corps n'est jamais cru.",
+      "keywords": [
+        "invoice",
+        "facture",
+        "btc.lightning.received.success",
+        "payouts"
+      ]
+    },
+    "route:GET /api/lnurl/[handle]/callback": {
+      "summary": "Deuxième étape LNURL-pay : le portefeuille demande une facture (invoice BOLT11) du montant choisi en msat. Crée un transfert d'origine lightning_address et renvoie pr + successAction.",
+      "keywords": [
+        "invoice",
+        "facture",
+        "pr",
+        "lud-06"
+      ]
+    },
+    "route:GET /api/lnurl/[handle]": {
+      "summary": "Première étape LNURL-pay (via le rewrite /.well-known/lnurlp/:handle) : renvoie tag payRequest, callback, minSendable / maxSendable et metadata.",
+      "keywords": [
+        "lud-16",
+        "adresse lightning",
+        "payRequest"
+      ]
+    },
+    "route:POST /api/transfers": {
+      "summary": "Validation du récapitulatif : crée le transfert, la cotation Bitnob et la facture Lightning, renvoie la facture et son QR code.",
+      "keywords": [
+        "invoice",
+        "facture",
+        "qr"
+      ]
+    },
+    "route:GET /api/transfers/[id]": {
+      "summary": "Polling de la page de paiement (protégé par le jeton d'accès). Sert aussi de filet de sécurité : refreshTransfer interroge Bitnob au plus une fois toutes les 4 s si le webhook n'arrive pas.",
+      "keywords": [
+        "invoice",
+        "polling"
+      ]
+    },
+    "route:GET /api/transfers/[id]/receipt": {
+      "summary": "Reçu d'un envoi abouti (PAYOUT_SUCCESS) avec la preuve Lightning : payment_hash + preimage.",
+      "keywords": [
+        "preimage",
+        "preuve",
+        "reçu"
+      ]
+    },
+    "fn:createInvoice": {
+      "summary": "Crée la facture Lightning chez Bitnob. La référence est l'id du transfert : un transfert = une facture (idempotent).",
+      "keywords": [
+        "facture"
+      ]
+    },
+    "fn:getInvoice": {
+      "summary": "Relit une facture chez Bitnob. C'est la seule source de vérité du paiement entrant (status paid + preimage).",
+      "keywords": [
+        "facture",
+        "preuve"
+      ]
+    },
+    "fn:payInvoice": {
+      "summary": "Paiement Lightning sortant, utilisé pour les remboursements. Idempotent sur la référence.",
+      "keywords": [
+        "facture",
+        "remboursement"
+      ]
+    },
+    "fn:confirmPayment": {
+      "summary": "Confirme un paiement entrant : GET de la facture chez Bitnob, verrou de ligne, passage en PAYOUT_PENDING (ou UNDERPAID si le montant reçu est insuffisant), puis payout ou remboursement.",
+      "keywords": [
+        "invoice",
+        "facture",
+        "preimage"
+      ]
+    },
+    "fn:runPayout": {
+      "summary": "Envoie les FCFA sur le mobile money : verrou FOR UPDATE SKIP LOCKED, 3 tentatives au maximum, recotation si la cotation expire, jamais à perte, puis remboursement en cas d'abandon.",
+      "keywords": [
+        "payout",
+        "verrou",
+        "idempotence"
+      ]
+    },
+    "fn:signRequest": {
+      "summary": "Signature HMAC-SHA256 de chaque requête Bitnob sur la chaîne CLIENT_ID:TIMESTAMP:NONCE:PAYLOAD.",
+      "keywords": [
+        "auth",
+        "hmac"
+      ]
+    },
+    "fn:verifyWebhookSignature": {
+      "summary": "Vérifie x-bitnob-signature (HMAC-SHA512) en temps constant, sur le corps brut ou sa re-sérialisation JSON.",
+      "keywords": [
+        "webhook",
+        "hmac"
+      ]
+    },
+    "fn:verifyLightningProof": {
+      "summary": "Vérifie dans le navigateur (Web Crypto) que SHA-256(preimage) = payment_hash.",
+      "keywords": [
+        "preuve",
+        "reçu"
+      ]
+    },
+    "fn:attemptRefund": {
+      "summary": "Rembourse en Lightning un transfert REFUND_PENDING ou UNDERPAID qui a une adresse de remboursement. Référence idempotente, 3 essais au maximum.",
+      "keywords": [
+        "remboursement",
+        "invoice"
+      ]
+    },
+    "fn:invoiceForAddress": {
+      "summary": "Résout une adresse Lightning (LUD-16) et obtient une facture d'exactement le montant voulu, sinon refuse.",
+      "keywords": [
+        "facture",
+        "lud-16",
+        "invoice"
+      ]
+    },
+    "fn:invoiceAmountSats": {
+      "summary": "Décode une facture BOLT11 pour lire son montant et son expiration.",
+      "keywords": [
+        "facture",
+        "bolt11"
+      ]
+    },
+    "fn:invoiceExpirySeconds": {
+      "summary": "La facture expire avant la cotation Bitnob (~6 min), avec 60 s de marge.",
+      "keywords": [
+        "facture",
+        "cotation"
+      ]
+    },
+    "route:POST /api/quote": {
+      "summary": "Devis indicatif FCFA → sats, sans écriture en base : vraie cotation Bitnob + 1,5 % de frais. Le devis définitif est refait à la validation du transfert (la cotation expire en ~6 min).",
+      "keywords": [
+        "cotation",
+        "quote",
+        "prix"
+      ]
+    },
+    "page:/pay/[id]": {
+      "summary": "Page de paiement : QR code de la facture Lightning, suivi de l'envoi par polling de GET /api/transfers/[id], bouton de simulation en sandbox, puis liens vers le reçu et le journal « sous le capot ».",
+      "keywords": [
+        "invoice",
+        "qr",
+        "polling"
+      ]
+    },
+    "page:/recu/[id]": {
+      "summary": "Reçu d'un envoi abouti. Vérifie dans le navigateur que SHA-256(preimage) = payment_hash (verifyLightningProof).",
+      "keywords": [
+        "preimage",
+        "preuve",
+        "reçu"
+      ]
+    },
+    "page:/p/[handle]/gerer": {
+      "summary": "Espace du bénéficiaire, ouvert par le lien de gestion secret (?k=…) : historique des envois reçus, création et suivi des cagnottes. Le jeton part dans l'en-tête x-owner-token.",
+      "keywords": [
+        "owner_token",
+        "dashboard"
+      ]
+    },
+    "fn:wasFinalizeRequested": {
+      "summary": "Vrai si une finalisation a déjà été demandée pour ce payout (événement payout_finalize_requested). Dans ce cas on ne crée jamais de second payout.",
+      "keywords": [
+        "anti double envoi",
+        "idempotence"
+      ]
+    },
+    "fn:payoutCanStillComplete": {
+      "summary": "Un remboursement n'est sûr que si aucun payout ne peut encore aboutir chez Bitnob (statut relu par GET).",
+      "keywords": [
+        "remboursement",
+        "anti double envoi"
+      ]
+    }
+  },
+  "features": [
+    {
+      "id": "envoi",
+      "title": "Envoi classique",
+      "summary": "L'expéditeur saisit un montant en FCFA, le bénéficiaire et son opérateur, puis paie une facture Lightning. Le montant affiché vient d'une vraie cotation Bitnob.",
+      "screens": [
+        "page:/",
+        "page:/recipient",
+        "page:/pay/[id]"
+      ],
+      "routes": [
+        "route:POST /api/quote",
+        "route:POST /api/transfers",
+        "route:GET /api/transfers/[id]"
+      ],
+      "functions": [
+        "fn:useQuote",
+        "fn:createTransfer",
+        "fn:insertWithInvoice",
+        "fn:priceFromQuote",
+        "fn:payoutCostSats",
+        "fn:createTransferSchema",
+        "fn:getTransferForViewer"
+      ],
+      "bitnob": [
+        "bitnob:POST /api/payouts/quotes",
+        "bitnob:POST /api/lightning/invoices",
+        "bitnob:GET /api/lightning/invoices/:id"
+      ],
+      "tables": [
+        "table:transfers",
+        "table:transfer_events"
+      ],
+      "steps": [
+        {
+          "text": "Accueil : l'expéditeur tape un montant en FCFA. useQuote appelle POST /api/quote (délai de 500 ms) pour afficher le prix en sats. Rien n'est écrit en base.",
+          "refs": [
+            "page:/",
+            "fn:useQuote",
+            "route:POST /api/quote"
+          ]
+        },
+        {
+          "text": "/recipient : nom, numéro sénégalais et opérateur du bénéficiaire, nom et pays de l'expéditeur, adresse de remboursement facultative. Un nouveau devis est demandé pour le récapitulatif.",
+          "refs": [
+            "page:/recipient",
+            "fn:createTransferSchema",
+            "fn:normalizeSnPhone"
+          ]
+        },
+        {
+          "text": "Validation : POST /api/transfers. createTransfer obtient une cotation Bitnob pour le montant FCFA exact, priceFromQuote ajoute 1,5 % de frais en sats entiers.",
+          "refs": [
+            "route:POST /api/transfers",
+            "fn:createTransfer",
+            "fn:priceFromQuote"
+          ]
+        },
+        {
+          "text": "insertWithInvoice insère la ligne CREATED, crée la facture Lightning (référence = id du transfert) et passe en AWAITING_PAYMENT. Si la facture échoue : CANCELLED.",
+          "refs": [
+            "fn:insertWithInvoice",
+            "fn:createInvoice",
+            "fn:invoiceExpirySeconds"
+          ]
+        },
+        {
+          "text": "/pay/[id] affiche le QR code et interroge GET /api/transfers/[id] ; la page relance refreshTransfer au plus une fois toutes les 4 s.",
+          "refs": [
+            "page:/pay/[id]",
+            "route:GET /api/transfers/[id]",
+            "fn:refreshTransfer"
+          ]
+        },
+        {
+          "text": "Paiement détecté (webhook ou polling) : confirmPayment relit la facture, puis runPayout envoie les FCFA.",
+          "refs": [
+            "fn:confirmPayment",
+            "fn:runPayout"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lien",
+      "title": "Lien de paiement permanent",
+      "summary": "Le bénéficiaire crée une fois pour toutes un lien domaine/p/awa. L'expéditeur n'a plus qu'à choisir le montant : le numéro vient de la base, jamais du navigateur.",
+      "screens": [
+        "page:/creer",
+        "page:/p/[handle]"
+      ],
+      "routes": [
+        "route:POST /api/recipients",
+        "route:GET /api/recipients/[handle]",
+        "route:POST /api/recipients/[handle]/transfers"
+      ],
+      "functions": [
+        "fn:createRecipient",
+        "fn:getRecipient",
+        "fn:publicRecipient",
+        "fn:createLinkTransfer",
+        "fn:handleSchema",
+        "fn:maskPhone"
+      ],
+      "bitnob": [
+        "bitnob:POST /api/payouts/quotes",
+        "bitnob:POST /api/lightning/invoices"
+      ],
+      "tables": [
+        "table:recipients",
+        "table:transfers"
+      ],
+      "steps": [
+        {
+          "text": "/creer : choix de l'identifiant (3 à 30 caractères, mots réservés refusés), du nom, du numéro et de l'opérateur.",
+          "refs": [
+            "page:/creer",
+            "fn:handleSchema",
+            "fn:createRecipientSchema"
+          ]
+        },
+        {
+          "text": "POST /api/recipients enregistre le bénéficiaire et renvoie le lien, l'adresse Lightning et, une seule fois, le lien de gestion secret.",
+          "refs": [
+            "route:POST /api/recipients",
+            "fn:createRecipient",
+            "col:recipients.owner_token"
+          ]
+        },
+        {
+          "text": "/p/[handle] lit les informations publiques (numéro masqué) via GET /api/recipients/[handle].",
+          "refs": [
+            "page:/p/[handle]",
+            "route:GET /api/recipients/[handle]",
+            "fn:publicRecipient"
+          ]
+        },
+        {
+          "text": "L'expéditeur choisit le montant : POST /api/recipients/[handle]/transfers → createLinkTransfer, qui lit le bénéficiaire en base, puis le même parcours que l'envoi classique (origine link).",
+          "refs": [
+            "route:POST /api/recipients/[handle]/transfers",
+            "fn:createLinkTransfer",
+            "col:transfers.origin"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lnurl",
+      "title": "Adresse Lightning (LNURL-pay, LUD-06 / LUD-16)",
+      "summary": "awa@domaine reçoit des sats depuis n'importe quel portefeuille compatible ; ils arrivent en FCFA sur le mobile money d'Awa. Ici, c'est l'expéditeur qui fixe le total en sats.",
+      "screens": [],
+      "routes": [
+        "route:GET /api/lnurl/[handle]",
+        "route:GET /api/lnurl/[handle]/callback"
+      ],
+      "functions": [
+        "fn:lnurlMetadata",
+        "fn:sendableBounds",
+        "fn:createLightningAddressTransfer",
+        "fn:netSatsFromTotal",
+        "fn:priceFromSatsQuote",
+        "fn:satsToBtcString"
+      ],
+      "bitnob": [
+        "bitnob:POST /api/payouts/quotes",
+        "bitnob:POST /api/lightning/invoices"
+      ],
+      "tables": [
+        "table:recipients",
+        "table:transfers"
+      ],
+      "steps": [
+        {
+          "text": "Le portefeuille résout awa@domaine en GET https://domaine/.well-known/lnurlp/awa, réécrit par Next vers /api/lnurl/awa.",
+          "refs": [
+            "code:next.config.ts#/.well-known/lnurlp/:handle",
+            "route:GET /api/lnurl/[handle]"
+          ]
+        },
+        {
+          "text": "Réponse payRequest : bornes min/max en sats dérivées des plafonds FCFA par une cotation de référence de 1 000 FCFA (cache de 60 s, marge de 2 %).",
+          "refs": [
+            "fn:sendableBounds",
+            "fn:lnurlMetadata"
+          ]
+        },
+        {
+          "text": "Le portefeuille appelle le callback avec amount (msat) et un commentaire, qui sert de nom d'expéditeur.",
+          "refs": [
+            "route:GET /api/lnurl/[handle]/callback"
+          ]
+        },
+        {
+          "text": "createLightningAddressTransfer retire 1,5 % du total, demande une cotation par montant BTC (part nette) et crée la facture. Le callback renvoie pr et un lien de suivi (successAction).",
+          "refs": [
+            "fn:createLightningAddressTransfer",
+            "fn:netSatsFromTotal",
+            "fn:priceFromSatsQuote"
+          ]
+        }
+      ],
+      "notes": [
+        "Limite connue : Bitnob ne pose pas de description_hash (tag BOLT11 « h ») dans ses factures. LUD-06 l'exige : les portefeuilles stricts (Phoenix, Zeus, Breez) refusent de payer. Vérifié par scripts/check-description-hash.ts, qui essaie les champs description_hash et descriptionHash."
+      ],
+      "noteRefs": [
+        "code:scripts/check-description-hash.ts#description_hash",
+        "code:src/lib/lnurl.ts#description_hash"
+      ]
+    },
+    {
+      "id": "cagnotte",
+      "title": "Cagnottes familiales",
+      "summary": "Un objectif partagé (« Loyer de maman ») auquel plusieurs proches contribuent. L'application ne garde jamais les fonds : chaque contribution est un envoi complet vers le mobile money du bénéficiaire.",
+      "screens": [
+        "page:/c/[slug]"
+      ],
+      "routes": [
+        "route:GET /api/pots/[slug]",
+        "route:POST /api/pots/[slug]/contributions",
+        "route:POST /api/recipients/[handle]/pots"
+      ],
+      "functions": [
+        "fn:createPot",
+        "fn:potSlug",
+        "fn:getPot",
+        "fn:potProgress",
+        "fn:publicPot",
+        "fn:contributionSchema",
+        "fn:createLinkTransfer"
+      ],
+      "bitnob": [
+        "bitnob:POST /api/payouts/quotes",
+        "bitnob:POST /api/lightning/invoices"
+      ],
+      "tables": [
+        "table:pots",
+        "table:transfers"
+      ],
+      "steps": [
+        {
+          "text": "Le bénéficiaire crée la cagnotte depuis son espace (jeton propriétaire requis). potSlug fabrique une adresse lisible avec un suffixe aléatoire.",
+          "refs": [
+            "route:POST /api/recipients/[handle]/pots",
+            "fn:createPot",
+            "fn:potSlug"
+          ]
+        },
+        {
+          "text": "/c/[slug] affiche l'objectif et la progression : seuls les envois livrés (PAYOUT_SUCCESS) comptent.",
+          "refs": [
+            "page:/c/[slug]",
+            "route:GET /api/pots/[slug]",
+            "fn:potProgress"
+          ]
+        },
+        {
+          "text": "Contribution : POST /api/pots/[slug]/contributions (refusée si la cagnotte est clôturée) → createLinkTransfer avec pot_id et show_sender (le nom peut rester masqué).",
+          "refs": [
+            "route:POST /api/pots/[slug]/contributions",
+            "fn:contributionSchema",
+            "col:transfers.pot_id",
+            "col:transfers.show_sender"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "espace",
+      "title": "Espace bénéficiaire",
+      "summary": "Historique des envois reçus et gestion des cagnottes, accessibles par un lien secret (?k=…) donné une seule fois à la création. Pas de compte, pas de mot de passe.",
+      "screens": [
+        "page:/p/[handle]/gerer"
+      ],
+      "routes": [
+        "route:GET /api/recipients/[handle]/dashboard",
+        "route:POST /api/recipients/[handle]/pots"
+      ],
+      "functions": [
+        "fn:getRecipientForOwner",
+        "fn:ownerToken",
+        "fn:potProgress"
+      ],
+      "bitnob": [],
+      "tables": [
+        "table:recipients",
+        "table:pots",
+        "table:transfers"
+      ],
+      "steps": [
+        {
+          "text": "À la création du lien, POST /api/recipients renvoie manageLink = /p/[handle]/gerer?k=<owner_token>.",
+          "refs": [
+            "route:POST /api/recipients",
+            "col:recipients.owner_token"
+          ]
+        },
+        {
+          "text": "La page envoie le jeton dans l'en-tête x-owner-token (jamais dans l'URL des appels API).",
+          "refs": [
+            "page:/p/[handle]/gerer",
+            "code:src/app/p/[handle]/gerer/page.tsx#x-owner-token"
+          ]
+        },
+        {
+          "text": "getRecipientForOwner compare le jeton en temps constant (timingSafeEqual). Le tableau de bord ne liste que l'argent payé.",
+          "refs": [
+            "fn:getRecipientForOwner",
+            "route:GET /api/recipients/[handle]/dashboard"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "recu",
+      "title": "Reçu et preuve de paiement",
+      "summary": "Un reçu partageable, avec une preuve vérifiable par n'importe qui : la preimage Lightning, dont le SHA-256 doit redonner le payment_hash de la facture.",
+      "screens": [
+        "page:/recu/[id]"
+      ],
+      "routes": [
+        "route:GET /api/transfers/[id]/receipt"
+      ],
+      "functions": [
+        "fn:verifyLightningProof",
+        "fn:confirmPayment"
+      ],
+      "bitnob": [
+        "bitnob:GET /api/lightning/invoices/:id"
+      ],
+      "tables": [
+        "col:transfers.ln_preimage",
+        "col:transfers.ln_payment_hash"
+      ],
+      "steps": [
+        {
+          "text": "confirmPayment enregistre la preimage renvoyée par GET /api/lightning/invoices/:id quand la facture est payée.",
+          "refs": [
+            "fn:confirmPayment",
+            "col:transfers.ln_preimage"
+          ]
+        },
+        {
+          "text": "GET /api/transfers/[id]/receipt (jeton d'accès) ne répond qu'une fois l'envoi abouti.",
+          "refs": [
+            "route:GET /api/transfers/[id]/receipt"
+          ]
+        },
+        {
+          "text": "La page /recu/[id] recalcule SHA-256(preimage) dans le navigateur (Web Crypto) et le compare au payment_hash.",
+          "refs": [
+            "page:/recu/[id]",
+            "fn:verifyLightningProof",
+            "test:preuve de paiement Lightning"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "journal",
+      "title": "Sous le capot (journal technique)",
+      "summary": "Chaque étape d'un envoi est écrite dans un journal immuable. La page « sous le capot » le montre au jury, en clair, avec les numéros masqués.",
+      "screens": [
+        "page:/pay/[id]/journal"
+      ],
+      "routes": [
+        "route:GET /api/transfers/[id]/events"
+      ],
+      "functions": [
+        "fn:logEvent",
+        "fn:sanitize",
+        "fn:describe"
+      ],
+      "bitnob": [],
+      "tables": [
+        "table:transfer_events"
+      ],
+      "steps": [
+        {
+          "text": "logEvent écrit dans transfer_events à chaque appel Bitnob et à chaque transition (cotation, facture, paiement, payout, remboursement, webhook).",
+          "refs": [
+            "fn:logEvent",
+            "table:transfer_events"
+          ]
+        },
+        {
+          "text": "GET /api/transfers/[id]/events (jeton d'accès) masque les numéros (sanitize) et ajoute un libellé lisible à chaque événement (describe).",
+          "refs": [
+            "route:GET /api/transfers/[id]/events",
+            "fn:sanitize",
+            "fn:describe"
+          ]
+        },
+        {
+          "text": "/pay/[id]/journal affiche la chronologie.",
+          "refs": [
+            "page:/pay/[id]/journal"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "webhook",
+      "title": "Webhook Bitnob",
+      "summary": "Bitnob prévient l'application quand une facture est payée ou qu'un payout avance. Le webhook ne sert que de déclencheur : la vérité est relue chez Bitnob.",
+      "screens": [],
+      "routes": [
+        "route:POST /api/webhooks/bitnob"
+      ],
+      "functions": [
+        "fn:verifyWebhookSignature",
+        "fn:findTransferIdForEvent",
+        "fn:confirmPayment",
+        "fn:syncPayout"
+      ],
+      "bitnob": [
+        "bitnob:GET /api/lightning/invoices/:id",
+        "bitnob:GET /api/payouts/:id"
+      ],
+      "tables": [
+        "table:webhook_receipts",
+        "table:transfer_events"
+      ],
+      "steps": [
+        {
+          "text": "Lecture du corps brut, indispensable pour vérifier x-bitnob-signature (HMAC-SHA512).",
+          "refs": [
+            "route:POST /api/webhooks/bitnob",
+            "fn:verifyWebhookSignature"
+          ]
+        },
+        {
+          "text": "Déduplication : insertion dans webhook_receipts par event_id (ou SHA-256 du corps). Bitnob peut renvoyer le même événement jusqu'à 3 fois.",
+          "refs": [
+            "table:webhook_receipts",
+            "code:src/app/api/webhooks/bitnob/route.ts#ON CONFLICT DO NOTHING"
+          ]
+        },
+        {
+          "text": "findTransferIdForEvent retrouve le transfert par référence, id de facture, payment_hash ou id de payout ; l'événement est journalisé (webhook:<événement>).",
+          "refs": [
+            "fn:findTransferIdForEvent",
+            "event:webhook:${event}"
+          ]
+        },
+        {
+          "text": "btc.lightning.* → confirmPayment (relit la facture par GET) ; payouts.* → syncPayout (relit le payout par GET). En cas d'erreur, réponse 200 quand même : la réconciliation reprendra.",
+          "refs": [
+            "fn:confirmPayment",
+            "fn:syncPayout",
+            "event:webhook_processing_error"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "payout",
+      "title": "Payout mobile money",
+      "summary": "L'envoi des FCFA vers Orange Money, Wave, Free ou Expresso. Le point le plus sensible : il ne doit jamais partir deux fois, ni à perte.",
+      "screens": [],
+      "routes": [],
+      "functions": [
+        "fn:runPayout",
+        "fn:wasFinalizeRequested",
+        "fn:applyPayoutStatus",
+        "fn:mapPayoutStatus",
+        "fn:syncPayout",
+        "fn:initializePayout",
+        "fn:finalizePayout",
+        "fn:getPayout",
+        "fn:createPayoutQuote"
+      ],
+      "bitnob": [
+        "bitnob:POST /api/payouts/quotes",
+        "bitnob:POST /api/payouts/:quoteId/initialize",
+        "bitnob:POST /api/payouts/:quoteId/finalize",
+        "bitnob:GET /api/payouts/:id"
+      ],
+      "tables": [
+        "col:transfers.payout_reference",
+        "col:transfers.bitnob_payout_id",
+        "col:transfers.payout_status"
+      ],
+      "steps": [
+        {
+          "text": "Verrou : SELECT … FOR UPDATE SKIP LOCKED sur un transfert PAYOUT_PENDING ou PAYOUT_FAILED. Un second appel concurrent repart sans rien faire.",
+          "refs": [
+            "fn:runPayout",
+            "code:src/lib/transfers.ts#FOR UPDATE SKIP LOCKED"
+          ]
+        },
+        {
+          "text": "Au-delà de 3 tentatives (événements payout_attempt), l'envoi est abandonné : REFUND_PENDING puis remboursement.",
+          "refs": [
+            "fn:MAX_PAYOUT_ATTEMPTS",
+            "event:payout_attempt",
+            "event:payout_abandoned"
+          ]
+        },
+        {
+          "text": "Si un payout existe déjà chez Bitnob, on lit son statut avant toute nouvelle tentative. Si une finalisation a déjà été demandée et que Bitnob ne l'a pas déclarée morte (FAILED / EXPIRED), on retente la même finalisation : jamais de second payout. Référence idempotente po-<uuid>, renouvelée seulement si le payout est mort ou la cotation expirée avant toute finalisation.",
+          "refs": [
+            "fn:getPayout",
+            "fn:wasFinalizeRequested",
+            "col:transfers.payout_reference"
+          ]
+        },
+        {
+          "text": "Cotation qui expire dans moins de 45 s (validité Bitnob ~6 min) : nouvelle cotation. Si elle coûte plus que les sats reçus, on bloque (requote_too_expensive) : jamais d'envoi à perte.",
+          "refs": [
+            "fn:QUOTE_SAFETY_MS",
+            "event:quote_refreshed",
+            "event:requote_too_expensive"
+          ]
+        },
+        {
+          "text": "initialize (bénéficiaire, opérateur, expéditeur), puis payout_finalize_requested est écrit AVANT l'appel finalize : si la réponse se perd, on sait que l'argent a peut-être bougé. Le statut Bitnob est traduit en PAYOUT_SUCCESS / PAYOUT_FAILED / PAYOUT_PROCESSING ; PAYOUT_SUCCESS est terminal.",
+          "refs": [
+            "fn:initializePayout",
+            "event:payout_finalize_requested",
+            "fn:finalizePayout",
+            "fn:applyPayoutStatus",
+            "fn:mapPayoutStatus"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "remboursement",
+      "title": "Remboursement automatique",
+      "summary": "Si l'envoi ne peut pas aboutir (paiement insuffisant, payout abandonné, cours trop défavorable) et que l'expéditeur a laissé une adresse Lightning, ses sats lui sont rendus automatiquement.",
+      "screens": [],
+      "routes": [],
+      "functions": [
+        "fn:attemptRefund",
+        "fn:payoutCanStillComplete",
+        "fn:invoiceForAddress",
+        "fn:lightningAddressUrl",
+        "fn:invoiceAmountSats",
+        "fn:refundAmount",
+        "fn:maxRoutingFee",
+        "fn:payInvoice"
+      ],
+      "bitnob": [
+        "bitnob:POST /api/lightning/pay"
+      ],
+      "tables": [
+        "col:transfers.refund_address",
+        "col:transfers.refund_reference",
+        "col:transfers.refunded_sats"
+      ],
+      "steps": [
+        {
+          "text": "Garde préalable : si un payout peut encore livrer les FCFA chez Bitnob (en cours, ou finalisation déjà demandée), le remboursement est suspendu (refund_blocked) jusqu'à son échec ou son expiration. Sinon l'argent partirait deux fois.",
+          "refs": [
+            "fn:payoutCanStillComplete",
+            "event:refund_blocked"
+          ]
+        },
+        {
+          "text": "attemptRefund verrouille le transfert (REFUND_PENDING ou UNDERPAID avec adresse), 3 essais au maximum, référence rf-<id>-<n>.",
+          "refs": [
+            "fn:attemptRefund",
+            "event:refund_attempt"
+          ]
+        },
+        {
+          "text": "Anti-SSRF : l'adresse doit être un domaine public en HTTPS (pas de localhost, d'IP ni de domaine interne), sans redirection, délai de 8 s.",
+          "refs": [
+            "fn:lightningAddressUrl",
+            "test:anti-SSRF"
+          ]
+        },
+        {
+          "text": "Résolution LUD-16, puis contrôle de la facture reçue : montant exact (reçu moins 1 % de frais de routage, minimum 10 sats) et non expirée.",
+          "refs": [
+            "fn:invoiceForAddress",
+            "fn:invoiceAmountSats",
+            "fn:refundAmount",
+            "fn:maxRoutingFee"
+          ]
+        },
+        {
+          "text": "payInvoice avec la référence idempotente ; paid → REFUNDED. Erreur Bitnob ambiguë (5xx) : la référence est gardée, le prochain essai ne paiera pas deux fois.",
+          "refs": [
+            "fn:payInvoice",
+            "event:refund_payment",
+            "event:refund_error"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "reconciliation",
+      "title": "Réconciliation",
+      "summary": "Bitnob recommande de ne pas dépendre uniquement des webhooks. Deux filets : le polling de la page de paiement et une tâche périodique.",
+      "screens": [],
+      "routes": [
+        "route:GET /api/cron/reconcile",
+        "route:GET /api/transfers/[id]"
+      ],
+      "functions": [
+        "fn:reconcile",
+        "fn:refreshTransfer",
+        "fn:syncPayout"
+      ],
+      "bitnob": [
+        "bitnob:GET /api/lightning/invoices/:id",
+        "bitnob:GET /api/payouts/:id"
+      ],
+      "tables": [
+        "table:transfers"
+      ],
+      "steps": [
+        {
+          "text": "GET /api/cron/reconcile (Authorization: Bearer CRON_SECRET) reprend les transferts des 2 derniers jours en attente, en payout ou à rembourser (50 au maximum).",
+          "refs": [
+            "route:GET /api/cron/reconcile",
+            "fn:reconcile",
+            "env:CRON_SECRET"
+          ]
+        },
+        {
+          "text": "refreshTransfer selon l'état : confirmer le paiement (et marquer EXPIRED si la facture a expiré), synchroniser le payout, relancer un payout ou un remboursement.",
+          "refs": [
+            "fn:refreshTransfer",
+            "event:expired"
+          ]
+        },
+        {
+          "text": "Le polling de /pay/[id] appelle la même fonction, limitée à une fois toutes les 4 s.",
+          "refs": [
+            "route:GET /api/transfers/[id]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "simulation",
+      "title": "Simulation sandbox",
+      "summary": "Les factures sandbox (lntb…) ne sont payables par aucun portefeuille grand public. Pour la démo, on simule uniquement le paiement entrant ; le payout part réellement chez Bitnob sandbox.",
+      "screens": [
+        "page:/pay/[id]"
+      ],
+      "routes": [
+        "route:POST /api/transfers/[id]/simulate"
+      ],
+      "functions": [
+        "fn:simulateSandboxPayment",
+        "fn:isSimulationEnabled",
+        "fn:getBitnobEnvironment"
+      ],
+      "bitnob": [
+        "bitnob:GET /api/whoami"
+      ],
+      "tables": [
+        "table:transfers"
+      ],
+      "steps": [
+        {
+          "text": "Première garde : SANDBOX_SIMULATION doit valoir \"true\" ET GET /api/whoami doit répondre environment = sandbox (sinon la route renvoie 404).",
+          "refs": [
+            "route:POST /api/transfers/[id]/simulate",
+            "fn:isSimulationEnabled",
+            "env:SANDBOX_SIMULATION"
+          ]
+        },
+        {
+          "text": "Seconde garde dans simulateSandboxPayment : whoami relu sans cache (fresh), jamais de simulation avec des clés de production.",
+          "refs": [
+            "fn:simulateSandboxPayment"
+          ]
+        },
+        {
+          "text": "Le transfert passe en PAYOUT_PENDING puis runPayout appelle vraiment Bitnob. Si seul le solde sandbox manque (INSUFFICIENT_FUNDS), l'envoi est marqué réussi avec payout_status SIMULATED, affiché comme tel partout.",
+          "refs": [
+            "event:payment_simulated",
+            "event:payout_simulated"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "client",
+      "title": "Client Bitnob",
+      "summary": "Un seul point d'entrée pour tous les appels à l'API Bitnob, avec l'authentification HMAC.",
+      "screens": [],
+      "routes": [],
+      "functions": [
+        "fn:bitnob",
+        "fn:signRequest",
+        "fn:BitnobError"
+      ],
+      "bitnob": [],
+      "tables": [],
+      "steps": [
+        {
+          "text": "Le corps est sérialisé une seule fois ; c'est exactement cette chaîne qui est signée puis envoyée ('' pour un GET).",
+          "refs": [
+            "fn:bitnob",
+            "test:le corps envoyé est exactement la chaîne signée"
+          ]
+        },
+        {
+          "text": "Signature HMAC-SHA256 hexadécimale de CLIENT_ID:TIMESTAMP:NONCE:PAYLOAD, nonce aléatoire de 16 octets, en-têtes X-Auth-Client / X-Auth-Timestamp / X-Auth-Nonce / X-Auth-Signature.",
+          "refs": [
+            "fn:signRequest",
+            "test:signe CLIENT_ID:TIMESTAMP:NONCE:PAYLOAD"
+          ]
+        },
+        {
+          "text": "Réponse non JSON, HTTP en erreur ou success = false : BitnobError avec le statut et le corps, pour le journal.",
+          "refs": [
+            "fn:BitnobError"
+          ]
+        }
+      ]
+    }
+  ],
+  "bitnobApis": [
+    {
+      "method": "GET",
+      "path": "/api/whoami",
+      "why": "Vérifier les clés et savoir si l'on est en sandbox ou en live (garde de la simulation)."
+    },
+    {
+      "method": "GET",
+      "path": "/api/balances",
+      "why": "Contrôle du solde au démarrage (script de vérification)."
+    },
+    {
+      "method": "POST",
+      "path": "/api/payouts/quotes",
+      "why": "Cotation BTC → XOF : par montant FCFA visé (envoi, lien, cagnotte) ou par montant BTC (adresse Lightning). Le taux affiché est celui qui sera exécuté."
+    },
+    {
+      "method": "POST",
+      "path": "/api/payouts/:quoteId/initialize",
+      "why": "Attacher le bénéficiaire (numéro, opérateur) et l'expéditeur à la cotation, avec une référence idempotente."
+    },
+    {
+      "method": "POST",
+      "path": "/api/payouts/:quoteId/finalize",
+      "why": "Déclencher l'envoi mobile money."
+    },
+    {
+      "method": "GET",
+      "path": "/api/payouts/:id",
+      "why": "Statut réel d'un payout (synchronisation, anti double envoi)."
+    },
+    {
+      "method": "GET",
+      "path": "/api/payouts/supported-countries/:country",
+      "why": "Vérifier que le Sénégal et ses réseaux (orange, free, expresso, wave) sont pris en charge."
+    },
+    {
+      "method": "GET",
+      "path": "/api/payouts/banks/:cc",
+      "why": "Liste des opérateurs mobile money disponibles au Sénégal."
+    },
+    {
+      "method": "POST",
+      "path": "/api/lightning/invoices",
+      "why": "Créer la facture Lightning que paie l'expéditeur (référence = id du transfert)."
+    },
+    {
+      "method": "GET",
+      "path": "/api/lightning/invoices/:id",
+      "why": "Preuve du paiement entrant : status paid + preimage. Seule source de vérité."
+    },
+    {
+      "method": "POST",
+      "path": "/api/lightning/pay",
+      "why": "Payer la facture de remboursement de l'expéditeur."
+    }
+  ],
+  "webhooks": [
+    {
+      "event": "btc.lightning.received.success",
+      "why": "Une facture Lightning a été payée.",
+      "handling": "confirmPayment : relit la facture par GET avant toute action.",
+      "refs": [
+        "code:src/app/api/webhooks/bitnob/route.ts#btc.lightning",
+        "fn:confirmPayment"
+      ]
+    },
+    {
+      "event": "payouts.initialized",
+      "why": "Le payout est enregistré chez Bitnob.",
+      "handling": "syncPayout : relit le payout par GET.",
+      "refs": [
+        "code:src/app/api/webhooks/bitnob/route.ts#\"payouts.\"",
+        "fn:syncPayout"
+      ]
+    },
+    {
+      "event": "payouts.processing",
+      "why": "Le payout est en cours chez l'opérateur.",
+      "handling": "syncPayout.",
+      "refs": [
+        "fn:syncPayout"
+      ]
+    },
+    {
+      "event": "payouts.withdrawal.success",
+      "why": "Les FCFA sont arrivés sur le mobile money.",
+      "handling": "syncPayout → PAYOUT_SUCCESS ; l'événement date aussi le reçu.",
+      "refs": [
+        "fn:syncPayout",
+        "route:GET /api/transfers/[id]/receipt"
+      ]
+    },
+    {
+      "event": "payouts.withdrawal.expired",
+      "why": "Le payout a expiré sans aboutir.",
+      "handling": "syncPayout → PAYOUT_FAILED puis nouvelle tentative runPayout.",
+      "refs": [
+        "fn:syncPayout",
+        "fn:runPayout"
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "title": "Bitnob Payouts plutôt que PayDunya",
+      "choice": "Le décaissement FCFA passe par l'API Payouts de Bitnob, pas par PayDunya comme prévu dans la première architecture.",
+      "why": "Un seul fournisseur fait la conversion BTC → XOF et l'envoi mobile money. Pas de solde FCFA à approvisionner chez un second prestataire, une seule signature, une seule réconciliation. Orange Money, Wave, Free et Expresso sont pris en charge au Sénégal.",
+      "refs": [
+        "code:migrations/001_init.sql#PayDunya",
+        "fn:createPayoutQuote",
+        "fn:SN_NETWORKS"
+      ]
+    },
+    {
+      "title": "Lightning par défaut plutôt qu'on-chain",
+      "choice": "L'expéditeur paie une facture Lightning ; la colonne rail prévoit l'on-chain mais il n'est pas branché.",
+      "why": "Confirmation en quelques secondes au lieu de plusieurs blocs, frais minimes pour des petits montants familiaux, et une preuve de paiement cryptographique (la preimage) qu'on peut montrer sur le reçu.",
+      "refs": [
+        "col:transfers.rail",
+        "fn:createInvoice"
+      ]
+    },
+    {
+      "title": "Cotation Bitnob plutôt que Yadio ou CoinGecko",
+      "choice": "Le prix en sats affiché vient d'une cotation Bitnob réelle (POST /api/payouts/quotes), pas d'un flux de prix public.",
+      "why": "Taux affiché = taux exécuté : la cotation est celle qui servira au payout, frais Bitnob compris. Un cours externe aurait pu différer et faire perdre de l'argent ou mentir sur le montant reçu.",
+      "refs": [
+        "route:POST /api/quote",
+        "fn:priceFromQuote",
+        "fn:payoutCostSats"
+      ]
+    },
+    {
+      "title": "Le webhook déclenche, la facture prouve",
+      "choice": "Le corps d'un webhook n'est jamais cru : confirmPayment relit la facture par GET /api/lightning/invoices/:id.",
+      "why": "Même avec une signature valide, un webhook rejoué ou mal routé ne doit pas déclencher d'envoi. La preuve est le statut paid avec sa preimage, lu chez Bitnob.",
+      "refs": [
+        "fn:confirmPayment",
+        "fn:getInvoice",
+        "route:POST /api/webhooks/bitnob"
+      ]
+    },
+    {
+      "title": "Un lien de gestion secret plutôt qu'un compte",
+      "choice": "Le bénéficiaire gère son lien et ses cagnottes avec un jeton secret donné une seule fois (/p/[handle]/gerer?k=…).",
+      "why": "Pas de fournisseur SMS / OTP intégrable dans le temps du hackathon. Le risque reste limité : l'argent ne peut pas être détourné, car le numéro de destination est figé à la création et n'est modifiable par aucune API.",
+      "tradeoff": "Limite : pas de récupération si le lien est perdu. Étape suivante : connexion par numéro + code, puis OTP par SMS.",
+      "refs": [
+        "col:recipients.owner_token",
+        "fn:getRecipientForOwner",
+        "route:GET /api/recipients/[handle]/dashboard"
+      ]
+    },
+    {
+      "title": "Lien permanent, et l'adresse Lightning en bonus",
+      "choice": "Un même identifiant donne un lien web (/p/awa) et une adresse Lightning (awa@domaine).",
+      "why": "Le lien marche pour tout le monde, depuis n'importe quel portefeuille, en scannant un QR. L'adresse Lightning est un bonus pour les bitcoineurs, sans écran supplémentaire.",
+      "refs": [
+        "table:recipients",
+        "route:GET /api/lnurl/[handle]"
+      ]
+    },
+    {
+      "title": "Cagnotte sans garde de fonds",
+      "choice": "Chaque contribution est un envoi complet, livré tout de suite au bénéficiaire.",
+      "why": "L'application ne détient jamais d'argent : pas de solde à protéger, pas de statut de dépositaire, et rien à rembourser si l'objectif n'est pas atteint. La progression ne compte que les envois livrés.",
+      "refs": [
+        "fn:potProgress",
+        "fn:createLinkTransfer"
+      ]
+    },
+    {
+      "title": "Montants en sats entiers, jamais de flottants",
+      "choice": "Les chaînes BTC de Bitnob sont converties en sats avec BigInt, en arrondissant au sat supérieur ; la base stocke des BIGINT.",
+      "why": "0,1 + 0,2 ≠ 0,3 en virgule flottante. Sur de l'argent, une erreur d'arrondi répétée devient une perte. La base refuse en plus tout transfert à perte (CHECK amount_btc_sats >= payout_cost_sats).",
+      "refs": [
+        "fn:btcStringToSats",
+        "fn:satsToBtcString",
+        "code:migrations/001_init.sql#jamais de transfert à perte",
+        "test:btcStringToSats"
+      ]
+    },
+    {
+      "title": "RLS Supabase activé, sans aucune politique",
+      "choice": "Toutes les tables ont la sécurité au niveau des lignes activée et aucune politique.",
+      "why": "Supabase expose le schéma public par son API REST : sans politique, les clés anon/authenticated ne lisent ni n'écrivent rien. Le serveur passe par une connexion Postgres directe (DATABASE_URL), qui n'est pas concernée.",
+      "refs": [
+        "code:migrations/001_init.sql#ENABLE ROW LEVEL SECURITY",
+        "env:DATABASE_URL"
+      ]
+    },
+    {
+      "title": "Simulation sandbox doublement verrouillée",
+      "choice": "Le bouton « simuler le paiement » n'existe que si SANDBOX_SIMULATION=true ET si Bitnob confirme le sandbox, vérifié une seconde fois sans cache au moment d'agir.",
+      "why": "Une simulation oubliée en production enverrait de vrais FCFA sans paiement. Deux gardes indépendantes, dont une interroge Bitnob en direct.",
+      "refs": [
+        "fn:isSimulationEnabled",
+        "fn:simulateSandboxPayment",
+        "env:SANDBOX_SIMULATION"
+      ]
+    },
+    {
+      "title": "Frais de 1,5 % et plafond d'envoi",
+      "choice": "Frais de service de 1,5 % (SERVICE_FEE_PERCENT), montants entre NEXT_PUBLIC_MIN_FCFA (500) et NEXT_PUBLIC_MAX_FCFA (500 000).",
+      "why": "Les frais couvrent la variation du cours entre la cotation et le payout (sinon recotation, et blocage si cela devient une perte). Le plafond limite l'exposition pendant la phase de test, côté serveur comme côté client.",
+      "refs": [
+        "fn:FEE_PERCENT",
+        "fn:MAX_FCFA",
+        "fn:amountSchema",
+        "env:NEXT_PUBLIC_MAX_FCFA"
+      ]
+    }
+  ],
+  "states": {
+    "happyPath": [
+      "CREATED",
+      "AWAITING_PAYMENT",
+      "PAYOUT_PENDING",
+      "PAYOUT_PROCESSING",
+      "PAYOUT_SUCCESS"
+    ],
+    "transitions": [
+      {
+        "from": "CREATED",
+        "to": "AWAITING_PAYMENT",
+        "when": "Facture Lightning créée",
+        "by": "fn:insertWithInvoice"
+      },
+      {
+        "from": "CREATED",
+        "to": "CANCELLED",
+        "when": "Création de facture impossible",
+        "by": "fn:insertWithInvoice"
+      },
+      {
+        "from": "AWAITING_PAYMENT",
+        "to": "PAYOUT_PENDING",
+        "when": "Facture payée, montant suffisant (lu par GET)",
+        "by": "fn:confirmPayment"
+      },
+      {
+        "from": "AWAITING_PAYMENT",
+        "to": "UNDERPAID",
+        "when": "Facture payée mais montant insuffisant → remboursement",
+        "by": "fn:confirmPayment"
+      },
+      {
+        "from": "AWAITING_PAYMENT",
+        "to": "EXPIRED",
+        "when": "Facture expirée sans paiement",
+        "by": "fn:refreshTransfer"
+      },
+      {
+        "from": "EXPIRED",
+        "to": "PAYOUT_PENDING",
+        "when": "Paiement arrivé tardivement (toujours relu chez Bitnob)",
+        "by": "fn:confirmPayment"
+      },
+      {
+        "from": "AWAITING_PAYMENT",
+        "to": "PAYOUT_PENDING",
+        "when": "Paiement simulé (sandbox uniquement)",
+        "by": "fn:simulateSandboxPayment"
+      },
+      {
+        "from": "PAYOUT_PENDING",
+        "to": "PAYOUT_PROCESSING",
+        "when": "Verrou posé, tentative de payout",
+        "by": "fn:runPayout"
+      },
+      {
+        "from": "PAYOUT_FAILED",
+        "to": "PAYOUT_PROCESSING",
+        "when": "Nouvelle tentative (3 au maximum)",
+        "by": "fn:runPayout"
+      },
+      {
+        "from": "PAYOUT_PROCESSING",
+        "to": "PAYOUT_SUCCESS",
+        "when": "Bitnob : COMPLETED (terminal)",
+        "by": "fn:applyPayoutStatus"
+      },
+      {
+        "from": "PAYOUT_PROCESSING",
+        "to": "PAYOUT_FAILED",
+        "when": "Bitnob : FAILED / EXPIRED",
+        "by": "fn:applyPayoutStatus"
+      },
+      {
+        "from": "PAYOUT_PROCESSING",
+        "to": "PAYOUT_FAILED",
+        "when": "Erreur lors d'un appel Bitnob (payout_error)",
+        "by": "fn:runPayout"
+      },
+      {
+        "from": "PAYOUT_PROCESSING",
+        "to": "REFUND_PENDING",
+        "when": "Recotation plus chère que les sats reçus",
+        "by": "fn:runPayout"
+      },
+      {
+        "from": "PAYOUT_FAILED",
+        "to": "REFUND_PENDING",
+        "when": "3 tentatives épuisées (payout_abandoned)",
+        "by": "fn:runPayout"
+      },
+      {
+        "from": "PAYOUT_FAILED",
+        "to": "PAYOUT_SUCCESS",
+        "when": "Sandbox : finalisation simulée faute de solde (payout_status SIMULATED)",
+        "by": "fn:simulateSandboxPayment"
+      },
+      {
+        "from": "REFUND_PENDING",
+        "to": "REFUNDED",
+        "when": "Remboursement Lightning payé",
+        "by": "fn:attemptRefund"
+      },
+      {
+        "from": "UNDERPAID",
+        "to": "REFUNDED",
+        "when": "Remboursement Lightning payé",
+        "by": "fn:attemptRefund"
+      }
+    ],
+    "notes": [
+      "PAYMENT_DETECTED est déclaré dans l'énumération (rail on-chain) mais aucun code ne l'écrit aujourd'hui.",
+      "Sans adresse de remboursement, REFUND_PENDING et UNDERPAID restent en attente d'une revue manuelle.",
+      "REFUND_PENDING ou UNDERPAID n'est remboursé que si aucun payout ne peut encore aboutir chez Bitnob ; sinon le remboursement est suspendu (refund_blocked) et retenté par la réconciliation."
+    ]
+  }
+}

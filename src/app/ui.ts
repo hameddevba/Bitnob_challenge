@@ -1,0 +1,53 @@
+// Utilitaires partagés par les écrans (côté client).
+
+export type Quote = {
+  amountFcfa: number;
+  payoutCostSats: number;
+  feeSats: number;
+  totalSats: number;
+  feeFcfa: number;
+  rateBtcXof: number;
+  quoteExpiresAt: string;
+};
+
+const nfFr = new Intl.NumberFormat("fr-FR");
+// fr-FR sépare les milliers par une espace fine (U+202F), quasi invisible en grande taille
+export const num = (n: number) => nfFr.format(n).replace(/ /g, " ");
+const nf = { format: num };
+// Espaces insécables : le nombre ne se sépare jamais de son unité
+export const fcfa = (n: number) => `${nf.format(n)} FCFA`;
+export const sats = (n: number) => `${nf.format(n)} sats`;
+export const btc = (satsAmount: number) => `${(satsAmount / 1e8).toFixed(8)} BTC`;
+
+// Pastille à la couleur de chaque opérateur : repère visuel, pas décoration
+export const NETWORKS = [
+  { value: "orange", label: "Orange Money", color: "#ff7900" },
+  { value: "wave", label: "Wave", color: "#1dc4ff" },
+  { value: "free", label: "Free", color: "#cd1e25" },
+  { value: "expresso", label: "Expresso", color: "#475467" },
+] as const;
+
+export const COUNTRIES = [
+  ["SN", "Sénégal"], ["FR", "France"], ["IT", "Italie"], ["ES", "Espagne"], ["US", "États-Unis"],
+  ["CI", "Côte d'Ivoire"], ["GH", "Ghana"], ["NG", "Nigeria"], ["CA", "Canada"], ["DE", "Allemagne"],
+] as const;
+
+export async function postJson<T>(url: string, body: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error ?? `Erreur ${res.status}`);
+  return data as T;
+}
+
+// Au Sénégal, un lien se partage d'abord sur WhatsApp
+export const whatsappUrl = (text: string) => `https://wa.me/?text=${encodeURIComponent(text)}`;
+
+// Coût moyen d'un transfert vers l'Afrique subsaharienne : ~8 % (Banque mondiale,
+// Remittance Prices Worldwide). Sert uniquement à montrer l'économie, jamais au calcul du prix.
+export const CLASSIC_FEE_PERCENT = 8;
+export const classicFee = (amountFcfa: number) => Math.round((amountFcfa * CLASSIC_FEE_PERCENT) / 100);
+
+export const MIN_FCFA = Number(process.env.NEXT_PUBLIC_MIN_FCFA ?? 500);
+export const MAX_FCFA = Number(process.env.NEXT_PUBLIC_MAX_FCFA ?? 500000);
