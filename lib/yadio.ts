@@ -40,7 +40,7 @@ export function xofToSats(
     throw new Error("Le taux BTC/XOF est invalide");
   }
 
-  const sats = Math.ceil((amountXof / btcXofRate) * 100_000_000);
+  const sats = Math.floor((amountXof / btcXofRate) * 100_000_000);
 
   if (!Number.isSafeInteger(sats) || sats <= 0) {
     throw new Error("Le nombre de sats calculé est invalide");

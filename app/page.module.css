@@ -93,6 +93,7 @@
 .panel {
   min-width: 0;
   padding: 28px;
+  height: 90%; 
   border: 1px solid #e7eaf1;
   border-radius: 18px;
   background: #fff;
