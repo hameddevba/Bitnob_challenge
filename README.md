@@ -1,6 +1,6 @@
 # Yónne
 
-**Payez en bitcoin, votre famille reçoit des FCFA sur Orange Money ou Wave, en quelques secondes.**
+**Bitcoin ailleurs. FCFA chez vous.** Recevez de l'argent depuis n'importe quel pays et retirez-le sur votre Mobile Money (Orange Money, Wave, Free, Expresso), en quelques secondes.
 
 Projet du hackathon **Code & Chain Dakar 2026**, construit sur l'API **Bitnob** (Lightning + Payouts mobile money).
 
@@ -34,7 +34,11 @@ Le bénéficiaire ne touche jamais au bitcoin : il reçoit simplement un SMS de 
 | 🧾 | **Reçu avec preuve cryptographique** : la preimage Lightning, vérifiable dans le navigateur (SHA-256(preimage) = payment_hash) | `/recu/[id]` |
 | ↩️ | **Remboursement automatique** en Lightning si l'envoi mobile money échoue définitivement | (automatique) |
 | 🔍 | **Sous le capot** : chronologie technique de chaque envoi (cotation, facture, webhook, payout) | `/pay/[id]/journal` |
-| 📱 | **Interface d'application mobile** : onglets Envoyer / Recevoir / Activité, historique des envois gardé sur le téléphone | partout |
+| 💸 | **Économie affichée** : dès la saisie du montant, « Vous économisez X FCFA » face à un transfert classique (~8 % de frais en moyenne vers l'Afrique, Banque mondiale) contre 1,5 % | `/` |
+| 💬 | **Partage WhatsApp** du lien de paiement, des cagnottes et du reçu | `/creer`, `/c/[slug]`, `/p/[identifiant]/gerer`, `/recu/[id]` |
+| 📱 | **Application mobile installable** (PWA) : ajout à l'écran d'accueil, plein écran, onglets Envoyer / Recevoir / Activité, historique gardé sur le téléphone | partout |
+| 🖥️ | **Grand écran** : présentation à gauche (promesse, flux Bitcoin → Lightning → FCFA, opérateurs, chiffres clés), application dans une carte à droite | partout (≥ 1024 px) |
+| 🎨 | **Design** : thème anthracite sobre, police Geist, traits fins, logos des opérateurs, ₿ animé en arrière-plan (désactivé si l'appareil demande moins d'animations) | partout |
 
 ## Ce que nous utilisons de Bitnob
 

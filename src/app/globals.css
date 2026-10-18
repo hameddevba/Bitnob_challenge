@@ -465,3 +465,8 @@ h1 { font-weight: 500; font-size: 30px; letter-spacing: -0.04em; }
 @media (min-width: 1024px) and (min-height: 860px) {
   .hero { position: sticky; top: 72px; }  /* reste visible au défilement si l'écran est assez haut */
 }
+
+/* accueil : promesse en une ligne + opérateurs */
+.lede-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; color: var(--muted); font-size: 14px; margin: 0 0 24px; }
+.mini-logos { display: inline-flex; gap: 5px; }
+.mini-logos .net-logo { border-radius: 6px; }

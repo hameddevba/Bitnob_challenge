@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CLASSIC_FEE_PERCENT, classicFee, fcfa, MAX_FCFA, MIN_FCFA, num, sats } from "./ui";
+import { CLASSIC_FEE_PERCENT, classicFee, fcfa, MAX_FCFA, MIN_FCFA, NETWORKS, num, sats } from "./ui";
+import NetworkLogo from "./NetworkLogo";
 import { useQuote } from "./useQuote";
 import Flow from "./Flow";
 
@@ -16,8 +17,14 @@ export default function SendPage() {
 
   return (
     <div className="screen">
+      <p className="eyebrow">Vous payez en bitcoin · ils reçoivent des FCFA</p>
       <h1>Combien <span className="grad">envoyer</span>{" "}?</h1>
-      <p className="lede">Le bénéficiaire reçoit exactement ce montant sur son mobile money.</p>
+      <div className="lede-row">
+        <span>Reçu en quelques secondes sur</span>
+        <span className="mini-logos">
+          {NETWORKS.map((n) => <NetworkLogo key={n.value} network={n.value} size={22} />)}
+        </span>
+      </div>
       <Flow />
 
       <div className="amount">
