@@ -17,7 +17,7 @@ function RecipientForm() {
   const amount = Number(useSearchParams().get("amount"));
   const [form, setForm] = useState({
     recipientName: "", recipientPhone: "", confirmPhone: "", recipientNetwork: "orange",
-    senderName: "", senderCountry: "SN",
+    senderName: "", senderCountry: "SN", refundAddress: "",
   });
   const [recap, setRecap] = useState<Quote | null>(null);
   const [busy, setBusy] = useState(false);
@@ -62,6 +62,7 @@ function RecipientForm() {
         recipientNetwork: form.recipientNetwork,
         senderName: form.senderName,
         senderCountry: form.senderCountry,
+        refundAddress: form.refundAddress,
       });
       router.push(`/pay/${t.id}?token=${t.token}`);
     } catch (e) {
@@ -139,6 +140,12 @@ function RecipientForm() {
             {COUNTRIES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
           </select>
         </div>
+      </div>
+      <div className="field">
+        <label htmlFor="sr">Adresse Lightning pour un remboursement <span className="optional">(facultatif)</span></label>
+        <input id="sr" autoCapitalize="none" autoCorrect="off" placeholder="vous@blink.sv" value={form.refundAddress}
+          onChange={set("refundAddress")} />
+        <p className="note">Si l&apos;envoi échoue, vos sats y sont renvoyés automatiquement.</p>
       </div>
       {error && <div className="alert err">{error}</div>}
 

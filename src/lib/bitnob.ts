@@ -85,6 +85,19 @@ export function getInvoice(id: string) {
   return bitnob<LightningInvoice>("GET", `/api/lightning/invoices/${encodeURIComponent(id)}`);
 }
 
+// Paiement sortant (remboursement). Idempotent sur reference : relancer avec la même
+// référence renvoie le paiement d'origine au lieu de payer deux fois.
+export type LightningPayment = {
+  id: string; payment_hash: string; preimage?: string; amount_sat: string; fee_sat: string;
+  status: "paid" | "pending" | "failed"; reference: string;
+};
+
+export function payInvoice(p: { request: string; reference: string; maxFeeSats: number }) {
+  return bitnob<LightningPayment>("POST", "/api/lightning/pay", {
+    request: p.request, reference: p.reference, max_fee: p.maxFeeSats,
+  });
+}
+
 // ---------- Payouts (BTC → XOF Orange Money) ----------
 
 // Forme observée en sandbox (cotation BTC → XOF, Sénégal) :

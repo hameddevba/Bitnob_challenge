@@ -34,6 +34,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     expiresAt: t.expires_at,
     updatedAt: t.updated_at,
     simulated: t.payout_status === "SIMULATED",
+    refundAddress: t.refund_address,
+    refundedSats: t.refunded_sats === null ? null : Number(t.refunded_sats),
     canSimulate: t.status === "AWAITING_PAYMENT" && (await isSimulationEnabled()),
   });
 }

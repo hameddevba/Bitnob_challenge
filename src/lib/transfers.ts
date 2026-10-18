@@ -155,7 +155,14 @@ export async function confirmPayment(transferId: string, source: string): Promis
   });
 
   if (status === "PAYOUT_PENDING") await runPayout(transferId);
+  if (status === "UNDERPAID") await refundIfPossible(transferId);
   return status;
+}
+
+// Import dynamique : refunds.ts dépend de logEvent (évite un import circulaire)
+async function refundIfPossible(transferId: string) {
+  const { attemptRefund } = await import("./refunds");
+  await attemptRefund(transferId);
 }
 
 // ---------- 3. Payout mobile money ----------
@@ -172,6 +179,7 @@ function mapPayoutStatus(bitnobStatus: string): "PAYOUT_SUCCESS" | "PAYOUT_FAILE
 }
 
 export async function runPayout(transferId: string): Promise<void> {
+  let abandoned = false;
   const t = await withTx(async (c) => {
     const { rows } = await c.query(
       `SELECT * FROM transfers WHERE id=$1 AND status IN ('PAYOUT_PENDING','PAYOUT_FAILED')
@@ -183,6 +191,7 @@ export async function runPayout(transferId: string): Promise<void> {
     if (n[0].n >= MAX_PAYOUT_ATTEMPTS) {
       await c.query(`UPDATE transfers SET status='REFUND_PENDING' WHERE id=$1`, [transferId]);
       await logEvent(c, transferId, "system", "payout_abandoned", { attempts: n[0].n });
+      abandoned = true;
       return null;
     }
     await c.query(
@@ -190,6 +199,7 @@ export async function runPayout(transferId: string): Promise<void> {
     await logEvent(c, transferId, "system", "payout_attempt", { attempt: n[0].n + 1 });
     return rows[0];
   });
+  if (abandoned) return refundIfPossible(transferId);
   if (!t) return;
 
   try {
@@ -222,6 +232,7 @@ export async function runPayout(transferId: string): Promise<void> {
           // Le cours a monté plus que nos frais : on n'envoie pas à perte, revue manuelle.
           await pool.query(`UPDATE transfers SET status='REFUND_PENDING', payout_status='REQUOTE_TOO_HIGH' WHERE id=$1`, [transferId]);
           await logEvent(pool, transferId, "system", "requote_too_expensive", { cost, received: t.btc_received_sats, quote: q });
+          await refundIfPossible(transferId);
           return;
         }
         quoteId = q.quote_id;
@@ -302,13 +313,16 @@ export async function refreshTransfer(transferId: string, opts: { throttleMs?: n
     await syncPayout(transferId);
   } else if (t.status === "PAYOUT_PENDING" || (opts.retryFailed && t.status === "PAYOUT_FAILED")) {
     await runPayout(transferId);
+  } else if (opts.retryFailed && (t.status === "REFUND_PENDING" || t.status === "UNDERPAID")) {
+    await refundIfPossible(transferId);
   }
 }
 
 export async function reconcile() {
   const { rows } = await pool.query(
     `SELECT id FROM transfers
-     WHERE status IN ('AWAITING_PAYMENT','PAYOUT_PENDING','PAYOUT_PROCESSING','PAYOUT_FAILED')
+     WHERE (status IN ('AWAITING_PAYMENT','PAYOUT_PENDING','PAYOUT_PROCESSING','PAYOUT_FAILED')
+            OR (status IN ('REFUND_PENDING','UNDERPAID') AND refund_address IS NOT NULL))
        AND created_at > now() - interval '2 days'
      ORDER BY created_at LIMIT 50`);
   const results: Record<string, string> = {};
@@ -381,7 +395,8 @@ export async function findTransferIdForEvent(data: Record<string, unknown>): Pro
 export async function getTransferForViewer(id: string, token: string) {
   const { rows } = await pool.query(
     `SELECT id, status, amount_fcfa, fee_fcfa, amount_btc_sats, recipient_name, recipient_phone,
-            recipient_network, ln_payment_request, expires_at, payout_status, created_at, updated_at
+            recipient_network, ln_payment_request, expires_at, payout_status, created_at, updated_at,
+            refund_address, refunded_sats, pot_id
      FROM transfers WHERE id=$1 AND access_token=$2`, [id, token]);
   return rows[0] ?? null;
 }

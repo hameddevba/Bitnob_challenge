@@ -15,7 +15,7 @@ export default function PayLinkPage({ params }: { params: Promise<{ handle: stri
   const [payee, setPayee] = useState<Payee | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [raw, setRaw] = useState("10000");
-  const [sender, setSender] = useState({ senderName: "", senderCountry: "FR" });
+  const [sender, setSender] = useState({ senderName: "", senderCountry: "FR", refundAddress: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -96,6 +96,11 @@ export default function PayLinkPage({ params }: { params: Promise<{ handle: stri
             {COUNTRIES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
           </select>
         </div>
+      </div>
+      <div className="field">
+        <label htmlFor="sr">Adresse Lightning pour un remboursement <span className="optional">(facultatif)</span></label>
+        <input id="sr" autoCapitalize="none" autoCorrect="off" placeholder="vous@blink.sv" value={sender.refundAddress}
+          onChange={(e) => setSender({ ...sender, refundAddress: e.target.value.trim() })} />
       </div>
       {(error || quoteError) && <div className="alert err">{error ?? quoteError}</div>}
 

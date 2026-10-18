@@ -7,24 +7,25 @@ import { btc, fcfa, NETWORKS, num } from "../../ui";
 
 type Status =
   | "CREATED" | "AWAITING_PAYMENT" | "PAYMENT_DETECTED" | "UNDERPAID" | "PAYOUT_PENDING"
-  | "PAYOUT_PROCESSING" | "PAYOUT_SUCCESS" | "PAYOUT_FAILED" | "EXPIRED" | "CANCELLED" | "REFUND_PENDING";
+  | "PAYOUT_PROCESSING" | "PAYOUT_SUCCESS" | "PAYOUT_FAILED" | "EXPIRED" | "CANCELLED" | "REFUND_PENDING" | "REFUNDED";
 
 type Transfer = {
   id: string; status: Status; amountFcfa: number; feeFcfa: number; totalSats: number;
   recipientName: string; recipientPhone: string; recipientNetwork: string;
   paymentRequest: string | null; expiresAt: string | null;
   simulated?: boolean; canSimulate?: boolean;
+  refundAddress?: string | null; refundedSats?: number | null;
 };
 
-const FAILED: Status[] = ["PAYOUT_FAILED", "EXPIRED", "CANCELLED", "REFUND_PENDING", "UNDERPAID"];
-const TERMINAL: Status[] = ["PAYOUT_SUCCESS", ...FAILED];
+const FAILED: Status[] = ["PAYOUT_FAILED", "EXPIRED", "CANCELLED", "REFUND_PENDING", "UNDERPAID", "REFUNDED"];
+const TERMINAL: Status[] = ["PAYOUT_SUCCESS", "EXPIRED", "CANCELLED", "REFUNDED"];
 const nf = { format: num };
 
 // Avancement : 0 = attente paiement, 1 = payé, 2 = envoi mobile money, 3 = reçu
 function progress(s: Status): number {
   if (s === "PAYOUT_SUCCESS") return 3;
   if (s === "PAYOUT_PROCESSING") return 2;
-  if (s === "PAYMENT_DETECTED" || s === "PAYOUT_PENDING" || s === "PAYOUT_FAILED" || s === "REFUND_PENDING") return 1;
+  if (s === "PAYMENT_DETECTED" || s === "PAYOUT_PENDING" || s === "PAYOUT_FAILED" || s === "REFUND_PENDING" || s === "REFUNDED") return 1;
   return 0;
 }
 
@@ -169,7 +170,15 @@ function PayView({ id }: { id: string }) {
           return <li key={label} className={cls}><span className="mark" aria-hidden />{label}</li>;
         })}
       </ol>
-      {failed && <div className="alert err">{FAIL_TEXT[t.status]}</div>}
+      {failed && (
+        <div className={t.status === "REFUNDED" ? "alert warn" : "alert err"}>
+          {t.status === "REFUNDED"
+            ? `L'envoi n'a pas pu aboutir : ${num(t.refundedSats ?? 0)} sats ont été renvoyés sur ${t.refundAddress}.`
+            : (t.status === "REFUND_PENDING" || t.status === "UNDERPAID") && t.refundAddress
+              ? `L'envoi n'a pas pu aboutir. Vos sats sont en cours de renvoi sur ${t.refundAddress}.`
+              : FAIL_TEXT[t.status]}
+        </div>
+      )}
       {error && t && <div className="alert err">{error}</div>}
 
       {failed && <div className="actions"><a className="btn secondary" href="/">Recommencer</a></div>}
