@@ -4,6 +4,8 @@
 
 Projet du hackathon **Code & Chain Dakar 2026**, construit sur l'API **Bitnob** (Lightning + Payouts mobile money).
 
+**Démo en ligne : https://chemist-hardcover-unsecured.ngrok-free.dev** (sandbox Bitnob : le paiement Lightning se simule avec le bouton « Simuler le paiement » ; ngrok affiche d'abord une page d'avertissement, cliquer sur « Visit Site »).
+
 ---
 
 ## Le problème
