@@ -117,6 +117,7 @@ function PayView({ id }: { id: string }) {
         <div className="actions">
           <a className="btn" href={`/recu/${t.id}?token=${encodeURIComponent(token)}`}>Voir le reçu</a>
           <a className="btn secondary" href="/">Faire un nouvel envoi</a>
+          <a className="text-btn" href={`/pay/${t.id}/journal?token=${encodeURIComponent(token)}`}>Voir ce qui s&apos;est passé sous le capot</a>
         </div>
       </div>
     );
@@ -181,6 +182,7 @@ function PayView({ id }: { id: string }) {
       )}
       {error && t && <div className="alert err">{error}</div>}
 
+      <a className="aside-link" style={{ marginTop: 4 }} href={`/pay/${t.id}/journal?token=${encodeURIComponent(token)}`}>Voir ce qui se passe sous le capot</a>
       {failed && <div className="actions"><a className="btn secondary" href="/">Recommencer</a></div>}
     </div>
   );

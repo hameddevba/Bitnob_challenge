@@ -167,6 +167,21 @@ h1 { font-family: var(--display); font-weight: 700; font-size: 28px; line-height
 .tag.wait { background: var(--field); color: var(--muted); }
 .tag.err { background: var(--err-bg); color: var(--err); }
 
+/* ---------- sous le capot ---------- */
+.journal { list-style: none; margin: 8px 0 18px; padding: 0 0 0 18px; border-left: 2px solid var(--line); }
+.journal li { position: relative; padding: 0 0 18px 4px; }
+.journal li::before { content: ""; position: absolute; left: -25px; top: 5px; width: 12px; height: 12px; border-radius: 50%; background: var(--paper); border: 2px solid var(--muted); }
+.journal li.ok::before { background: var(--accent); border-color: var(--accent); }
+.journal li.err::before { background: var(--err); border-color: var(--err); }
+.j-head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.j-title { font-weight: 600; }
+.journal li.err .j-title { color: var(--err); }
+.j-time { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.j-detail { margin: 3px 0 0; color: var(--muted); font-size: 14px; }
+.journal details { margin-top: 6px; }
+.journal summary { font-size: 13px; color: var(--muted); cursor: pointer; }
+.journal pre { font-size: 11px; background: var(--field); border-radius: 10px; padding: 10px; overflow-x: auto; max-height: 260px; margin: 6px 0 0; }
+
 /* ---------- reçu ---------- */
 .mono { font-family: ui-monospace, Consolas, monospace; font-weight: 500; font-size: 13px; }
 .proof .hash { margin: 14px 0; }
