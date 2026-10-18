@@ -10,6 +10,7 @@
     "test": "vitest run",
     "check:db": "tsx scripts/check-db.ts",
     "check:bitnob": "tsx scripts/check-bitnob.ts",
+    "docs:build": "tsx scripts/build-code-guide.ts",
     "reconcile:loop": "tsx scripts/reconcile-loop.ts"
   },
   "dependencies": {
