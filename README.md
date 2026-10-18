@@ -159,4 +159,10 @@ En sandbox, les factures (`lntb…`) appartiennent au réseau de test : aucun po
 
 ## Équipe
 
-Équipe de 5 développeurs, Code & Chain Dakar 2026 : *à compléter*.
+Équipe de 5 développeurs, Code & Chain Dakar 2026 :
+
+- Mouhamed Naby Ndoye
+- Alpha Diallo
+- Moussa Dione
+- Fabien De Mayessi
+- Ba Mohamed
